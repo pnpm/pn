@@ -1,25 +1,43 @@
 use std::{path::{Path}};
 use std::fs::File;
 use std::process::Command;
+use std::fmt;
+use std::error::Error;
 
-fn main() -> Result<(), std::io::Error> {
+#[derive(Debug)]
+struct MissingScriptError(String);
+
+impl fmt::Display for MissingScriptError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "ERROR Missing script {}", self.0)
+    }
+}
+
+impl Error for MissingScriptError {}
+
+fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().collect();
     match &*args[1] {
         "run" | "run-script" => {
             let manifest = read_manifest(Path::new("package.json"))?;
-            let script = manifest["scripts"][&args[2]].as_str().unwrap();
-            println!("> {:?}", script);
-            let mut path_env: String = "node_modules/.bin".to_owned();
-            path_env.push_str(":");
-            path_env.push_str(env!("PATH"));
-            let mut child  = Command::new("sh")
-                .env("PATH", path_env)
-                .arg("-c")
-                .arg(script)
-                .stdout(std::process::Stdio::inherit())
-                .spawn()?;
-            child.wait()?;
-            Ok(())
+            let script_name = &args[2];
+            match manifest["scripts"][script_name].as_str() {
+                None => Err(Box::new(MissingScriptError(script_name.into()))),
+                Some(script) => {
+                    println!("> {:?}", script);
+                    let mut path_env: String = "node_modules/.bin".to_owned();
+                    path_env.push_str(":");
+                    path_env.push_str(env!("PATH"));
+                    let mut child  = Command::new("sh")
+                        .env("PATH", path_env)
+                        .arg("-c")
+                        .arg(script)
+                        .stdout(std::process::Stdio::inherit())
+                        .spawn()?;
+                    child.wait()?;
+                    Ok(())
+                }
+            }
         }
         _ => {
             pass_to_pnpm(&args[1..])?;

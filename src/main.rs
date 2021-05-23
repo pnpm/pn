@@ -19,35 +19,32 @@ impl Error for MissingScriptError {}
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().collect();
-    match &*args[1] {
-        "run" | "run-script" => {
-            let manifest = read_manifest(Path::new("package.json"))?;
-            let script_name = &args[2];
-            if let Some(script) = manifest["scripts"][script_name].as_str() {
-                eprintln!("> {:?}", script);
-                let mut path_env = OsString::from("node_modules/.bin");
-                if let Some(path) = env::var_os("PATH") {
-                    path_env.push(":");
-                    path_env.push(path);
-                }
-                let mut child = Command::new("sh")
-                    .env("PATH", path_env)
-                    .arg("-c")
-                    .arg(script)
-                    .stdin(std::process::Stdio::inherit())
-                    .stdout(std::process::Stdio::inherit())
-                    .stderr(std::process::Stdio::inherit())
-                    .spawn()?;
-                child.wait()?;
-                Ok(())
-            } else {
-                Err(Box::new(MissingScriptError(script_name.into())))
+    if let "run" | "run-script" = &*args[1] {
+        let manifest = read_manifest(Path::new("package.json"))?;
+        let script_name = &args[2];
+        if let Some(script) = manifest["scripts"][script_name].as_str() {
+            eprintln!("> {:?}", script);
+            let mut path_env = OsString::from("node_modules/.bin");
+            if let Some(path) = env::var_os("PATH") {
+                path_env.push(":");
+                path_env.push(path);
             }
-        }
-        _ => {
-            pass_to_pnpm(&args[1..])?;
+            let mut child = Command::new("sh")
+                .env("PATH", path_env)
+                .arg("-c")
+                .arg(script)
+                .stdin(std::process::Stdio::inherit())
+                .stdout(std::process::Stdio::inherit())
+                .stderr(std::process::Stdio::inherit())
+                .spawn()?;
+            child.wait()?;
             Ok(())
+        } else {
+            Err(Box::new(MissingScriptError(script_name.into())))
         }
+    } else {
+        pass_to_pnpm(&args[1..])?;
+        Ok(())
     }
 }
 

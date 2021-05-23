@@ -1,5 +1,6 @@
 use std::env;
 use std::error::Error;
+use std::ffi::OsString;
 use std::fmt;
 use std::fs::File;
 use std::path::Path;
@@ -26,10 +27,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 None => Err(Box::new(MissingScriptError(script_name.into()))),
                 Some(script) => {
                     println!("> {:?}", script);
-                    let mut path_env: String = "node_modules/.bin".to_owned();
-                    if let Ok(path) = env::var("PATH") {
-                        path_env.push(':');
-                        path_env += &path;
+                    let mut path_env = OsString::from("node_modules/.bin");
+                    if let Some(path) = env::var_os("PATH") {
+                        path_env.push(":");
+                        path_env.push(path);
                     }
                     let mut child = Command::new("sh")
                         .env("PATH", path_env)

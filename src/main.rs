@@ -1,8 +1,8 @@
-use std::{path::{Path}};
-use std::fs::File;
-use std::process::Command;
-use std::fmt;
 use std::error::Error;
+use std::fmt;
+use std::fs::File;
+use std::path::Path;
+use std::process::Command;
 
 #[derive(Debug)]
 struct MissingScriptError(String);
@@ -26,9 +26,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Some(script) => {
                     println!("> {:?}", script);
                     let mut path_env: String = "node_modules/.bin".to_owned();
-                    path_env.push_str(":");
+                    path_env.push(':');
                     path_env.push_str(env!("PATH"));
-                    let mut child  = Command::new("sh")
+                    let mut child = Command::new("sh")
                         .env("PATH", path_env)
                         .arg("-c")
                         .arg(script)
@@ -53,7 +53,7 @@ fn read_manifest<P: AsRef<Path>>(path: P) -> Result<serde_json::Value, std::io::
 }
 
 fn pass_to_pnpm(args: &[String]) -> Result<(), std::io::Error> {
-    let mut child  = Command::new("pnpm")
+    let mut child = Command::new("pnpm")
         .args(args)
         .stdout(std::process::Stdio::inherit())
         .spawn()?;

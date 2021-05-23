@@ -25,20 +25,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let script_name = &args[2];
             if let Some(script) = manifest["scripts"][script_name].as_str() {
                 eprintln!("> {:?}", script);
-                let mut path_env = OsString::from("node_modules/.bin");
-                if let Some(path) = env::var_os("PATH") {
-                    path_env.push(":");
-                    path_env.push(path);
-                }
-                let mut child = Command::new("sh")
-                    .env("PATH", path_env)
-                    .arg("-c")
-                    .arg(script)
-                    .stdin(std::process::Stdio::inherit())
-                    .stdout(std::process::Stdio::inherit())
-                    .stderr(std::process::Stdio::inherit())
-                    .spawn()?;
-                child.wait()?;
+                run_script(script)?;
                 Ok(())
             } else {
                 Err(Box::new(MissingScriptError(script_name.into())))
@@ -49,23 +36,28 @@ fn main() -> Result<(), Box<dyn Error>> {
             Ok(())
         }
         _ => {
-            let mut path_env = OsString::from("node_modules/.bin");
-            if let Some(path) = env::var_os("PATH") {
-                path_env.push(":");
-                path_env.push(path);
-            }
-            let mut child  = Command::new("sh")
-                .env("PATH", path_env)
-                .arg("-c")
-                .arg(&args[1..].join(" "))
-                .stdin(std::process::Stdio::inherit())
-                .stdout(std::process::Stdio::inherit())
-                .stderr(std::process::Stdio::inherit())
-                .spawn()?;
-            child.wait()?;
+            run_script(&args[1..].join(" "))?;
             Ok(())
         }
     }
+}
+
+fn run_script(script: &str) -> Result<(), Box<dyn Error>> {
+    let mut path_env = OsString::from("node_modules/.bin");
+    if let Some(path) = env::var_os("PATH") {
+        path_env.push(":");
+        path_env.push(path);
+    }
+    let mut child  = Command::new("sh")
+        .env("PATH", path_env)
+        .arg("-c")
+        .arg(script)
+        .stdin(std::process::Stdio::inherit())
+        .stdout(std::process::Stdio::inherit())
+        .stderr(std::process::Stdio::inherit())
+        .spawn()?;
+    child.wait()?;
+    Ok(())
 }
 
 fn read_manifest<P: AsRef<Path>>(path: P) -> Result<serde_json::Value, std::io::Error> {

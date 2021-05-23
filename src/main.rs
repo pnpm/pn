@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             match manifest["scripts"][script_name].as_str() {
                 None => Err(Box::new(MissingScriptError(script_name.into()))),
                 Some(script) => {
-                    println!("> {:?}", script);
+                    eprintln!("> {:?}", script);
                     let mut path_env = OsString::from("node_modules/.bin");
                     if let Some(path) = env::var_os("PATH") {
                         path_env.push(":");

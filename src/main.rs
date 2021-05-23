@@ -36,7 +36,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                         .env("PATH", path_env)
                         .arg("-c")
                         .arg(script)
+                        .stdin(std::process::Stdio::inherit())
                         .stdout(std::process::Stdio::inherit())
+                        .stderr(std::process::Stdio::inherit())
                         .spawn()?;
                     child.wait()?;
                     Ok(())

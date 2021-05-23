@@ -1,8 +1,10 @@
-use std::{path::{Path}};
-use std::fs::File;
-use std::process::Command;
-use std::fmt;
+use std::env;
 use std::error::Error;
+use std::ffi::OsString;
+use std::fmt;
+use std::fs::File;
+use std::path::Path;
+use std::process::Command;
 
 #[derive(Debug)]
 struct MissingScriptError(String);
@@ -17,32 +19,32 @@ impl Error for MissingScriptError {}
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().collect();
-    match &*args[1] {
-        "run" | "run-script" => {
-            let manifest = read_manifest(Path::new("package.json"))?;
-            let script_name = &args[2];
-            match manifest["scripts"][script_name].as_str() {
-                None => Err(Box::new(MissingScriptError(script_name.into()))),
-                Some(script) => {
-                    println!("> {:?}", script);
-                    let mut path_env: String = "node_modules/.bin".to_owned();
-                    path_env.push_str(":");
-                    path_env.push_str(env!("PATH"));
-                    let mut child  = Command::new("sh")
-                        .env("PATH", path_env)
-                        .arg("-c")
-                        .arg(script)
-                        .stdout(std::process::Stdio::inherit())
-                        .spawn()?;
-                    child.wait()?;
-                    Ok(())
-                }
+    if let "run" | "run-script" = &*args[1] {
+        let manifest = read_manifest(Path::new("package.json"))?;
+        let script_name = &args[2];
+        if let Some(script) = manifest["scripts"][script_name].as_str() {
+            eprintln!("> {:?}", script);
+            let mut path_env = OsString::from("node_modules/.bin");
+            if let Some(path) = env::var_os("PATH") {
+                path_env.push(":");
+                path_env.push(path);
             }
-        }
-        _ => {
-            pass_to_pnpm(&args[1..])?;
+            let mut child = Command::new("sh")
+                .env("PATH", path_env)
+                .arg("-c")
+                .arg(script)
+                .stdin(std::process::Stdio::inherit())
+                .stdout(std::process::Stdio::inherit())
+                .stderr(std::process::Stdio::inherit())
+                .spawn()?;
+            child.wait()?;
             Ok(())
+        } else {
+            Err(Box::new(MissingScriptError(script_name.into())))
         }
+    } else {
+        pass_to_pnpm(&args[1..])?;
+        Ok(())
     }
 }
 
@@ -53,9 +55,11 @@ fn read_manifest<P: AsRef<Path>>(path: P) -> Result<serde_json::Value, std::io::
 }
 
 fn pass_to_pnpm(args: &[String]) -> Result<(), std::io::Error> {
-    let mut child  = Command::new("pnpm")
+    let mut child = Command::new("pnpm")
         .args(args)
+        .stdin(std::process::Stdio::inherit())
         .stdout(std::process::Stdio::inherit())
+        .stderr(std::process::Stdio::inherit())
         .spawn()?;
     child.wait()?;
     Ok(())

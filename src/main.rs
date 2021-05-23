@@ -1,3 +1,4 @@
+use std::env;
 use std::error::Error;
 use std::fmt;
 use std::fs::File;
@@ -26,8 +27,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Some(script) => {
                     println!("> {:?}", script);
                     let mut path_env: String = "node_modules/.bin".to_owned();
-                    path_env.push(':');
-                    path_env.push_str(env!("PATH"));
+                    if let Ok(path) = env::var("PATH") {
+                        path_env.push(':');
+                        path_env += &path;
+                    }
                     let mut child = Command::new("sh")
                         .env("PATH", path_env)
                         .arg("-c")

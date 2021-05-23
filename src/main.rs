@@ -57,7 +57,9 @@ fn read_manifest<P: AsRef<Path>>(path: P) -> Result<serde_json::Value, std::io::
 fn pass_to_pnpm(args: &[String]) -> Result<(), std::io::Error> {
     let mut child = Command::new("pnpm")
         .args(args)
+        .stdin(std::process::Stdio::inherit())
         .stdout(std::process::Stdio::inherit())
+        .stderr(std::process::Stdio::inherit())
         .spawn()?;
     child.wait()?;
     Ok(())

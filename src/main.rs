@@ -28,7 +28,7 @@ fn main() {
         eprintln!(
             "{prefix} {error}",
             prefix = Black.on(Red).paint("\u{2009}ERROR\u{2009}"),
-            error = error,
+            error = Red.paint(error.to_string()),
         );
         std::process::exit(1);
     }

@@ -48,7 +48,7 @@ fn run_script(script: &str) -> Result<(), Box<dyn Error>> {
         path_env.push(":");
         path_env.push(path);
     }
-    let mut child  = Command::new("sh")
+    let mut child = Command::new("sh")
         .env("PATH", path_env)
         .arg("-c")
         .arg(script)

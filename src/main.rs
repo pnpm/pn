@@ -27,8 +27,13 @@ struct NodeManifest {
 }
 
 fn main() {
+    use ansi_term::Color::*;
     if let Err(error) = run() {
-        eprintln!("error: {}", error);
+        eprintln!(
+            "{prefix} {error}",
+            prefix = Black.on(Red).paint("\u{2009}ERROR\u{2009}"),
+            error = error,
+        );
         std::process::exit(1);
     }
 }

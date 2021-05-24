@@ -1,10 +1,4 @@
-use std::env;
-use std::error::Error;
-use std::ffi::OsString;
-use std::fmt;
-use std::fs::File;
-use std::path::Path;
-use std::process::Command;
+use std::{env, error::Error, ffi::OsString, fmt, fs::File, path::Path, process::Command};
 
 #[derive(Debug)]
 struct MissingScriptError(String);

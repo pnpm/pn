@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::env;
 use std::error::Error;
@@ -19,7 +19,7 @@ impl fmt::Display for MissingScriptError {
 impl Error for MissingScriptError {}
 
 /// Structure of `package.json`.
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 struct NodeManifest {
     #[serde(default)]

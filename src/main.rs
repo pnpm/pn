@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
-use std::{env, error::Error, ffi::OsString, fmt, fs::File, process::Command};
+use std::{
+    collections::HashMap, env, error::Error, ffi::OsString, fmt, fs::File, process::Command,
+};
 
 #[derive(Debug)]
 struct MissingScriptError(String);

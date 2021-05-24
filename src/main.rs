@@ -1,9 +1,10 @@
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::env;
 use std::error::Error;
 use std::ffi::OsString;
 use std::fmt;
 use std::fs::File;
-use std::path::Path;
 use std::process::Command;
 
 #[derive(Debug)]
@@ -17,13 +18,21 @@ impl fmt::Display for MissingScriptError {
 
 impl Error for MissingScriptError {}
 
+/// Structure of `package.json`.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+struct NodeManifest {
+    #[serde(default)]
+    scripts: HashMap<String, String>,
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().collect();
     match &*args[1] {
         "run" | "run-script" => {
-            let manifest = read_manifest(Path::new("package.json"))?;
+            let manifest: NodeManifest = serde_json::de::from_reader(File::open("package.json")?)?;
             let script_name = &args[2];
-            if let Some(script) = manifest["scripts"][script_name].as_str() {
+            if let Some(script) = manifest.scripts.get(script_name) {
                 eprintln!("> {:?}", script);
                 run_script(script)?;
                 Ok(())
@@ -58,12 +67,6 @@ fn run_script(script: &str) -> Result<(), Box<dyn Error>> {
         .spawn()?;
     child.wait()?;
     Ok(())
-}
-
-fn read_manifest<P: AsRef<Path>>(path: P) -> Result<serde_json::Value, std::io::Error> {
-    let file = File::open(path)?;
-    let manifest: serde_json::Value = serde_json::de::from_reader(file)?;
-    Ok(manifest)
 }
 
 fn pass_to_pnpm(args: &[String]) -> Result<(), std::io::Error> {

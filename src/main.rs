@@ -8,7 +8,7 @@ struct MissingScriptError(String);
 
 impl fmt::Display for MissingScriptError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "ERROR Missing script {}", self.0)
+        write!(f, "Missing script {:?}", self.0)
     }
 }
 
@@ -22,7 +22,19 @@ struct NodeManifest {
     scripts: HashMap<String, String>,
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() {
+    use ansi_term::Color::*;
+    if let Err(error) = run() {
+        eprintln!(
+            "{prefix} {error}",
+            prefix = Black.on(Red).paint("\u{2009}ERROR\u{2009}"),
+            error = Red.paint(error.to_string()),
+        );
+        std::process::exit(1);
+    }
+}
+
+fn run() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().collect();
     match &*args[1] {
         "run" | "run-script" => {

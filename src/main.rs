@@ -34,8 +34,8 @@ enum PnError {
 enum MainError {
     /// Errors emitted by `pn` itself.
     Pn(PnError),
-    /// The `pnpm` subprocess exits with non-zero status code.
-    Pnpm(NonZeroI32),
+    /// The subprocess that takes control exits with non-zero status code.
+    Sub(NonZeroI32),
 }
 
 impl MainError {
@@ -57,7 +57,7 @@ struct NodeManifest {
 fn main() {
     match run() {
         Ok(()) => {}
-        Err(MainError::Pnpm(status)) => exit(status.get()),
+        Err(MainError::Sub(status)) => exit(status.get()),
         Err(MainError::Pn(error)) => {
             eprintln!(
                 "{prefix} {error}",
@@ -94,9 +94,8 @@ fn run() -> Result<(), MainError> {
             Ok(())
         }
         _ => {
-            // run_script(&args[1..].join(" "))?;
-            // Ok(())
-            panic!("What does this part mean, @zkochan? Why doesn't pn just pass this to pnpm to handle?")
+            pass_to_sub(args[1..].join(" "))?;
+            Ok(())
         }
     }
 }
@@ -143,9 +142,35 @@ fn pass_to_pnpm(args: &[String]) -> Result<(), MainError> {
         .map(NonZeroI32::new);
     Err(match status {
         Some(None) => return Ok(()),
-        Some(Some(status)) => MainError::Pnpm(status),
+        Some(Some(status)) => MainError::Sub(status),
         None => MainError::Pn(PnError::UnexpectedTermination {
             command: format!("pnpm {}", args.join(" ")),
         }),
+    })
+}
+
+fn pass_to_sub(command: String) -> Result<(), MainError> {
+    let mut path_env = OsString::from("node_modules/.bin");
+    if let Some(path) = env::var_os("PATH") {
+        path_env.push(":");
+        path_env.push(path);
+    }
+    let status = Command::new("sh")
+        .env("PATH", path_env)
+        .arg("-c")
+        .arg(&command)
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .spawn()
+        .map_err(MainError::from_dyn)?
+        .wait()
+        .map_err(MainError::from_dyn)?
+        .code()
+        .map(NonZeroI32::new);
+    Err(match status {
+        Some(None) => return Ok(()),
+        Some(Some(status)) => MainError::Sub(status),
+        None => MainError::Pn(PnError::UnexpectedTermination { command }),
     })
 }

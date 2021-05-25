@@ -1,40 +1,50 @@
 use ansi_term::Color::{Black, Red};
+use derive_more::Display;
+use pipe_trait::Pipe;
 use serde::Deserialize;
 use std::{
     collections::HashMap,
     env,
     error::Error,
     ffi::OsString,
-    fmt,
     fs::File,
-    process::{exit, Child, Command, ExitStatus, Stdio},
+    num::NonZeroI32,
+    process::{exit, Command, Stdio},
 };
 
-#[derive(Debug)]
-struct MissingScriptError(String);
-
-impl fmt::Display for MissingScriptError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Missing script {:?}", self.0)
-    }
+/// Error types emitted by `pn` itself.
+#[derive(Debug, Display)]
+enum PnError {
+    /// Script not found when running `pn run`.
+    #[display(fmt = "Missing script {:?}", name)]
+    MissingScript { name: String },
+    /// Script ran by `pn run` exits with non-zero status code.
+    #[display(fmt = "Script {:?} exits with non-zero status code {}", name, status)]
+    ScriptError { name: String, status: NonZeroI32 },
+    /// Subprocess finishes but without a status code.
+    #[display(fmt = "Command {:?} has ended unexpectedly", command)]
+    UnexpectedTermination { command: String },
+    /// Other errors.
+    #[display(fmt = "{}", error)]
+    Other { error: Box<dyn Error> },
 }
 
-impl Error for MissingScriptError {}
-
+/// The main error type.
 #[derive(Debug)]
-struct FailureStatus(ExitStatus);
-
-impl fmt::Display for FailureStatus {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if let Some(code) = self.0.code() {
-            write!(f, "Process exits with non-zero status code {:?}", code)
-        } else {
-            write!(f, "An unknown problem occurred during execution of process")
-        }
-    }
+enum MainError {
+    /// Errors emitted by `pn` itself.
+    Pn(PnError),
+    /// The `pnpm` subprocess exits with non-zero status code.
+    Pnpm(NonZeroI32),
 }
 
-impl Error for FailureStatus {}
+impl MainError {
+    fn from_dyn(error: impl Error + 'static) -> Self {
+        MainError::Pn(PnError::Other {
+            error: Box::new(error),
+        })
+    }
+}
 
 /// Structure of `package.json`.
 #[derive(Debug, Clone, Deserialize)]
@@ -45,28 +55,38 @@ struct NodeManifest {
 }
 
 fn main() {
-    if let Err(error) = run() {
-        eprintln!(
-            "{prefix} {error}",
-            prefix = Black.on(Red).paint("\u{2009}ERROR\u{2009}"),
-            error = Red.paint(error.to_string()),
-        );
-        exit(1);
+    match run() {
+        Ok(()) => {}
+        Err(MainError::Pnpm(status)) => exit(status.get()),
+        Err(MainError::Pn(error)) => {
+            eprintln!(
+                "{prefix} {error}",
+                prefix = Black.on(Red).paint("\u{2009}ERROR\u{2009}"),
+                error = Red.paint(error.to_string()),
+            );
+            exit(1);
+        }
     }
 }
 
-fn run() -> Result<(), Box<dyn Error>> {
+fn run() -> Result<(), MainError> {
     let args: Vec<String> = std::env::args().collect();
     match &*args[1] {
         "run" | "run-script" => {
-            let manifest: NodeManifest = serde_json::de::from_reader(File::open("package.json")?)?;
-            let script_name = &args[2];
-            if let Some(script) = manifest.scripts.get(script_name) {
-                eprintln!("> {:?}", script);
-                run_script(script)?;
+            let manifest = "package.json"
+                .pipe(File::open)
+                .map_err(MainError::from_dyn)?
+                .pipe(serde_json::de::from_reader::<_, NodeManifest>)
+                .map_err(MainError::from_dyn)?;
+            let name = args[2].clone();
+            if let Some(command) = manifest.scripts.get(&name) {
+                eprintln!("> {:?}", command);
+                run_script(name, command.clone())?;
                 Ok(())
             } else {
-                Err(Box::new(MissingScriptError(script_name.into())))
+                PnError::MissingScript { name }
+                    .pipe(MainError::Pn)
+                    .pipe(Err)
             }
         }
         "install" | "i" | "update" | "up" => {
@@ -74,44 +94,58 @@ fn run() -> Result<(), Box<dyn Error>> {
             Ok(())
         }
         _ => {
-            run_script(&args[1..].join(" "))?;
-            Ok(())
+            // run_script(&args[1..].join(" "))?;
+            // Ok(())
+            panic!("What does this part mean, @zkochan? Why doesn't pn just pass this to pnpm to handle?")
         }
     }
 }
 
-fn wait_for_child(mut child: Child) -> Result<(), Box<dyn Error>> {
-    let status = child.wait()?;
-    if status.success() {
-        Ok(())
-    } else {
-        Err(Box::new(FailureStatus(status)))
-    }
-}
-
-fn run_script(script: &str) -> Result<(), Box<dyn Error>> {
+fn run_script(name: String, command: String) -> Result<(), MainError> {
     let mut path_env = OsString::from("node_modules/.bin");
     if let Some(path) = env::var_os("PATH") {
         path_env.push(":");
         path_env.push(path);
     }
-    let child = Command::new("sh")
+    let status = Command::new("sh")
         .env("PATH", path_env)
         .arg("-c")
-        .arg(script)
+        .arg(&command)
         .stdin(Stdio::inherit())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
-        .spawn()?;
-    wait_for_child(child)
+        .spawn()
+        .map_err(MainError::from_dyn)?
+        .wait()
+        .map_err(MainError::from_dyn)?
+        .code()
+        .map(NonZeroI32::new);
+    match status {
+        Some(None) => return Ok(()),
+        Some(Some(status)) => PnError::ScriptError { name, status },
+        None => PnError::UnexpectedTermination { command },
+    }
+    .pipe(MainError::Pn)
+    .pipe(Err)
 }
 
-fn pass_to_pnpm(args: &[String]) -> Result<(), Box<dyn Error>> {
-    let child = Command::new("pnpm")
+fn pass_to_pnpm(args: &[String]) -> Result<(), MainError> {
+    let status = Command::new("pnpm")
         .args(args)
         .stdin(Stdio::inherit())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
-        .spawn()?;
-    wait_for_child(child)
+        .spawn()
+        .map_err(MainError::from_dyn)?
+        .wait()
+        .map_err(MainError::from_dyn)?
+        .code()
+        .map(NonZeroI32::new);
+    Err(match status {
+        Some(None) => return Ok(()),
+        Some(Some(status)) => MainError::Pnpm(status),
+        None => MainError::Pn(PnError::UnexpectedTermination {
+            command: format!("pnpm {}", args.join(" ")),
+        }),
+    })
 }

@@ -8,3 +8,5 @@ edition = "2018"
 serde_json="1.0"
 serde = { version = "1.0", features = ["derive"] }
 ansi_term = "0.12.1"
+derive_more = "0.99.14"
+pipe-trait = "0.3.2"

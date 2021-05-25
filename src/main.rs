@@ -1,6 +1,12 @@
 use serde::Deserialize;
 use std::{
-    collections::HashMap, env, error::Error, ffi::OsString, fmt, fs::File, process::Command,
+    collections::HashMap,
+    env,
+    error::Error,
+    ffi::OsString,
+    fmt,
+    fs::File,
+    process::{Child, Command, ExitStatus},
 };
 
 #[derive(Debug)]
@@ -13,6 +19,21 @@ impl fmt::Display for MissingScriptError {
 }
 
 impl Error for MissingScriptError {}
+
+#[derive(Debug)]
+struct FailureStatus(ExitStatus);
+
+impl fmt::Display for FailureStatus {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if let Some(code) = self.0.code() {
+            write!(f, "Process exits with non-zero status code {:?}", code)
+        } else {
+            write!(f, "An unknown problem occurred during execution of process")
+        }
+    }
+}
+
+impl Error for FailureStatus {}
 
 /// Structure of `package.json`.
 #[derive(Debug, Clone, Deserialize)]
@@ -59,13 +80,22 @@ fn run() -> Result<(), Box<dyn Error>> {
     }
 }
 
+fn wait_for_child(mut child: Child) -> Result<(), Box<dyn Error>> {
+    let status = child.wait()?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(Box::new(FailureStatus(status)))
+    }
+}
+
 fn run_script(script: &str) -> Result<(), Box<dyn Error>> {
     let mut path_env = OsString::from("node_modules/.bin");
     if let Some(path) = env::var_os("PATH") {
         path_env.push(":");
         path_env.push(path);
     }
-    let mut child = Command::new("sh")
+    let child = Command::new("sh")
         .env("PATH", path_env)
         .arg("-c")
         .arg(script)
@@ -73,17 +103,15 @@ fn run_script(script: &str) -> Result<(), Box<dyn Error>> {
         .stdout(std::process::Stdio::inherit())
         .stderr(std::process::Stdio::inherit())
         .spawn()?;
-    child.wait()?;
-    Ok(())
+    wait_for_child(child)
 }
 
-fn pass_to_pnpm(args: &[String]) -> Result<(), std::io::Error> {
-    let mut child = Command::new("pnpm")
+fn pass_to_pnpm(args: &[String]) -> Result<(), Box<dyn Error>> {
+    let child = Command::new("pnpm")
         .args(args)
         .stdin(std::process::Stdio::inherit())
         .stdout(std::process::Stdio::inherit())
         .stderr(std::process::Stdio::inherit())
         .spawn()?;
-    child.wait()?;
-    Ok(())
+    wait_for_child(child)
 }

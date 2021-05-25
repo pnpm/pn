@@ -1,6 +1,13 @@
+use ansi_term::Color::{Black, Red};
 use serde::Deserialize;
 use std::{
-    collections::HashMap, env, error::Error, ffi::OsString, fmt, fs::File, process::Command,
+    collections::HashMap,
+    env,
+    error::Error,
+    ffi::OsString,
+    fmt,
+    fs::File,
+    process::{exit, Command, Stdio},
 };
 
 #[derive(Debug)]
@@ -23,14 +30,13 @@ struct NodeManifest {
 }
 
 fn main() {
-    use ansi_term::Color::*;
     if let Err(error) = run() {
         eprintln!(
             "{prefix} {error}",
             prefix = Black.on(Red).paint("\u{2009}ERROR\u{2009}"),
             error = Red.paint(error.to_string()),
         );
-        std::process::exit(1);
+        exit(1);
     }
 }
 
@@ -69,9 +75,9 @@ fn run_script(script: &str) -> Result<(), Box<dyn Error>> {
         .env("PATH", path_env)
         .arg("-c")
         .arg(script)
-        .stdin(std::process::Stdio::inherit())
-        .stdout(std::process::Stdio::inherit())
-        .stderr(std::process::Stdio::inherit())
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
         .spawn()?;
     child.wait()?;
     Ok(())
@@ -80,9 +86,9 @@ fn run_script(script: &str) -> Result<(), Box<dyn Error>> {
 fn pass_to_pnpm(args: &[String]) -> Result<(), std::io::Error> {
     let mut child = Command::new("pnpm")
         .args(args)
-        .stdin(std::process::Stdio::inherit())
-        .stdout(std::process::Stdio::inherit())
-        .stderr(std::process::Stdio::inherit())
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
         .spawn()?;
     child.wait()?;
     Ok(())

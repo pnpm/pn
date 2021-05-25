@@ -81,22 +81,15 @@ fn run() -> Result<(), MainError> {
             let name = args[2].clone();
             if let Some(command) = manifest.scripts.get(&name) {
                 eprintln!("> {:?}", command);
-                run_script(name, command.clone())?;
-                Ok(())
+                run_script(name, command.clone())
             } else {
                 PnError::MissingScript { name }
                     .pipe(MainError::Pn)
                     .pipe(Err)
             }
         }
-        "install" | "i" | "update" | "up" => {
-            pass_to_pnpm(&args[1..])?;
-            Ok(())
-        }
-        _ => {
-            pass_to_sub(args[1..].join(" "))?;
-            Ok(())
-        }
+        "install" | "i" | "update" | "up" => pass_to_pnpm(&args[1..]),
+        _ => pass_to_sub(args[1..].join(" ")),
     }
 }
 

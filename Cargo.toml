@@ -1,8 +1,10 @@
+cargo-features = ["edition2021"]
+
 [package]
 name = "pn"
 version = "0.0.0"
 authors = ["Zoltan Kochan <z@kochan.io>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 serde_json="1.0"

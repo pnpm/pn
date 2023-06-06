@@ -16,14 +16,12 @@ fn test_run_script() {
 
     // When
     // Run the CLI with the "run" command
-    let mut cmd = Command::cargo_bin("pn").unwrap();
-    cmd.current_dir(&temp_dir)
+    Command::cargo_bin("pn")
+        .unwrap()
+        .current_dir(&temp_dir)
         .arg("run")
         .arg("test")
         .assert()
         .success()
         .stdout("hello world\n");
-
-    // Clean up
-    temp_dir.close().unwrap();
 }

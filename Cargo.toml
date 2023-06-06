@@ -1,5 +1,3 @@
-cargo-features = ["edition2021"]
-
 [package]
 name = "pn"
 version = "0.0.0"
@@ -12,3 +10,7 @@ serde = { version = "1.0", features = ["derive"] }
 ansi_term = "0.12.1"
 derive_more = "0.99.14"
 pipe-trait = "0.3.2"
+
+[dev-dependencies]
+assert_cmd = "2.0.11"
+tempfile = "3.5.0"

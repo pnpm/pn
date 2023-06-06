@@ -9,7 +9,7 @@ fn test_run_script() {
     let temp_dir = tempfile::tempdir().unwrap();
     let package_json_path = temp_dir.path().join("package.json");
     fs::write(
-        &package_json_path,
+        package_json_path,
         r#"{"scripts": {"test": "echo hello world"}}"#,
     )
     .unwrap();
@@ -17,7 +17,7 @@ fn test_run_script() {
     // When
     // Run the CLI with the "run" command
     let mut cmd = Command::cargo_bin("pn").unwrap();
-    cmd.current_dir(temp_dir.path())
+    cmd.current_dir(&temp_dir)
         .arg("run")
         .arg("test")
         .assert()

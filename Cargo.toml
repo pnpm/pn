@@ -12,5 +12,5 @@ derive_more = "0.99.14"
 pipe-trait = "0.3.2"
 
 [dev-dependencies]
-assert_cmd = "2.0.11"
+assert_cmd = "2.0.5"
 tempfile = "3.5.0"

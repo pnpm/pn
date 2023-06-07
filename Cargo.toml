@@ -2,11 +2,15 @@
 name = "pn"
 version = "0.0.0"
 authors = ["Zoltan Kochan <z@kochan.io>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
-serde_json="1.0"
+serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 ansi_term = "0.12.1"
 derive_more = "0.99.14"
-pipe-trait = "0.3.2"
+pipe-trait = "0.4.0"
+
+[dev-dependencies]
+assert_cmd = "2.0.5"
+tempfile = "3.5.0"

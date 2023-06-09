@@ -55,3 +55,22 @@ fn test_workspace_root() {
         .success()
         .stdout("hello from workspace root\n");
 }
+
+#[test]
+fn test_workspace_root_not_found() {
+    let temp_dir = tempfile::tempdir().unwrap();
+    let package_json_path = temp_dir.path().join("package.json");
+    fs::write(
+        package_json_path,
+        r#"{"scripts": {"test": "echo hello world"}}"#,
+    )
+    .unwrap();
+
+    Command::cargo_bin("pn")
+        .unwrap()
+        .current_dir(&temp_dir)
+        .args(["--workspace-root", "run", "test"])
+        .assert()
+        .failure()
+        .stderr("pnpm-workspace.yaml not found\n");
+}

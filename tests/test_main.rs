@@ -25,3 +25,36 @@ fn test_run_script() {
         .success()
         .stdout("hello world\n");
 }
+
+#[test]
+fn test_workspace_root() {
+    let temp_dir = tempfile::tempdir().unwrap();
+    let temp_dir_path = temp_dir.path();
+    fs::write(
+        temp_dir_path.join("package.json"),
+        r#"{"scripts": {"test": "echo hello from workspace root"}}"#,
+    )
+    .unwrap();
+    fs::write(
+        temp_dir_path.join("pnpm-workspace.yaml"),
+        r#"packages: ["packages/*"]"#,
+    )
+    .unwrap();
+    let project_foo_path = temp_dir_path.join("packages/foo");
+    fs::create_dir_all(&project_foo_path).unwrap();
+    fs::write(
+        project_foo_path.join("package.json"),
+        r#"{"scripts": {"test": "echo hello from foo"}}"#,
+    )
+    .unwrap();
+
+    Command::cargo_bin("pn")
+        .unwrap()
+        .current_dir(project_foo_path)
+        .arg("--workspace-root")
+        .arg("run")
+        .arg("test")
+        .assert()
+        .success()
+        .stdout("hello from workspace root\n");
+}

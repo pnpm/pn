@@ -1,10 +1,10 @@
 use ansi_term::Color::{Black, Red};
 use clap::Parser;
 use derive_more::Display;
-use lets_find_up::find_up;
+use lets_find_up::*;
 use pipe_trait::Pipe;
 use serde::Deserialize;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::{
     collections::HashMap,
     env,
@@ -36,6 +36,8 @@ enum PnError {
     /// Subprocess finishes but without a status code.
     #[display(fmt = "Command {command:?} has ended unexpectedly")]
     UnexpectedTermination { command: String },
+    #[display(fmt = "--workspace-root may only be used in a workspace")]
+    NotInWorkspace,
     /// Other errors.
     #[display(fmt = "{error}")]
     Other { error: Box<dyn Error> },
@@ -87,14 +89,7 @@ fn run() -> Result<(), MainError> {
         "run" | "run-script" => {
             let mut cwd = env::current_dir().expect("Couldn't find the current working directory");
             if cli.workspace_root {
-                let workspace_manifest_location =
-                    find_up("pnpm-workspace.yaml").expect("pnpm-workspace.yaml not found");
-                if let Some(workspace_manifest_location) = workspace_manifest_location {
-                    cwd = workspace_manifest_location.parent().unwrap().to_path_buf();
-                } else {
-                    eprintln!("pnpm-workspace.yaml not found");
-                    exit(1);
-                }
+                cwd = find_workspace_root(&cwd)?;
             }
             let mut manifest_path = cwd.clone();
             manifest_path.push("package.json");
@@ -115,6 +110,24 @@ fn run() -> Result<(), MainError> {
         }
         "install" | "i" | "update" | "up" => pass_to_pnpm(&cli.name[0..]),
         _ => pass_to_sub(cli.name[0..].join(" ")),
+    }
+}
+
+fn find_workspace_root(cwd: &dyn AsRef<Path>) -> Result<PathBuf, MainError> {
+    let workspace_manifest_location = find_up_with(
+        "pnpm-workspace.yaml",
+        FindUpOptions {
+            kind: FindUpKind::File,
+            cwd: cwd.as_ref(),
+        },
+    )
+    .map_err(MainError::from_dyn)?;
+    match workspace_manifest_location {
+        Some(path) => Ok(path
+            .parent()
+            .ok_or(MainError::Pn(PnError::NotInWorkspace))?
+            .to_path_buf()),
+        None => Err(MainError::Pn(PnError::NotInWorkspace)),
     }
 }
 

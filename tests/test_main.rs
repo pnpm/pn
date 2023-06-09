@@ -66,11 +66,13 @@ fn test_workspace_root_not_found() {
     )
     .unwrap();
 
-    Command::cargo_bin("pn")
+    let assertion = Command::cargo_bin("pn")
         .unwrap()
         .current_dir(&temp_dir)
         .args(["--workspace-root", "run", "test"])
         .assert()
-        .failure()
-        .stderr("pnpm-workspace.yaml not found\n");
+        .failure();
+    let output = assertion.get_output();
+    let stderr = String::from_utf8(output.stderr.clone()).unwrap();
+    assert!(stderr.contains("--workspace-root may only be used in a workspace"));
 }

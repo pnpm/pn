@@ -91,8 +91,7 @@ fn run() -> Result<(), MainError> {
             if cli.workspace_root {
                 cwd = find_workspace_root(&cwd)?;
             }
-            let mut manifest_path = cwd.clone();
-            manifest_path.push("package.json");
+            let manifest_path = cwd.clone().join("package.json");
             let manifest = manifest_path
                 .pipe(File::open)
                 .map_err(MainError::from_dyn)?

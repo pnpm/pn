@@ -1,7 +1,10 @@
 use ansi_term::Color::{Black, Red};
+use clap::Parser;
 use derive_more::Display;
+use lets_find_up::find_up;
 use pipe_trait::Pipe;
 use serde::Deserialize;
+use std::path::Path;
 use std::{
     collections::HashMap,
     env,
@@ -11,6 +14,15 @@ use std::{
     num::NonZeroI32,
     process::{exit, Command, Stdio},
 };
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about=None)]
+struct Cli {
+    #[arg(short, long)]
+    workspace_root: bool,
+
+    name: Vec<String>,
+}
 
 /// Error types emitted by `pn` itself.
 #[derive(Debug, Display)]
@@ -70,36 +82,50 @@ fn main() {
 }
 
 fn run() -> Result<(), MainError> {
-    let args: Vec<String> = std::env::args().collect();
-    match &*args[1] {
+    let cli = Cli::parse();
+    match &*cli.name[0] {
         "run" | "run-script" => {
-            let manifest = "package.json"
+            let mut cwd = env::current_dir().expect("Couldn't find the current working directory");
+            if cli.workspace_root {
+                let workspace_manifest_location =
+                    find_up("pnpm-workspace.yaml").expect("pnpm-workspace.yaml not found");
+                if let Some(workspace_manifest_location) = workspace_manifest_location {
+                    cwd = workspace_manifest_location.parent().unwrap().to_path_buf();
+                } else {
+                    eprintln!("pnpm-workspace.yaml not found");
+                    exit(1);
+                }
+            }
+            let mut manifest_path = cwd.clone();
+            manifest_path.push("package.json");
+            let manifest = manifest_path
                 .pipe(File::open)
                 .map_err(MainError::from_dyn)?
                 .pipe(serde_json::de::from_reader::<_, NodeManifest>)
                 .map_err(MainError::from_dyn)?;
-            let name = args[2].clone();
+            let name = cli.name[1].clone();
             if let Some(command) = manifest.scripts.get(&name) {
                 eprintln!("> {:?}", command);
-                run_script(name, command.clone())
+                run_script(name, command.clone(), &cwd)
             } else {
                 PnError::MissingScript { name }
                     .pipe(MainError::Pn)
                     .pipe(Err)
             }
         }
-        "install" | "i" | "update" | "up" => pass_to_pnpm(&args[1..]),
-        _ => pass_to_sub(args[1..].join(" ")),
+        "install" | "i" | "update" | "up" => pass_to_pnpm(&cli.name[0..]),
+        _ => pass_to_sub(cli.name[0..].join(" ")),
     }
 }
 
-fn run_script(name: String, command: String) -> Result<(), MainError> {
+fn run_script(name: String, command: String, cwd: &dyn AsRef<Path>) -> Result<(), MainError> {
     let mut path_env = OsString::from("node_modules/.bin");
     if let Some(path) = env::var_os("PATH") {
         path_env.push(":");
         path_env.push(path);
     }
     let status = Command::new("sh")
+        .current_dir(cwd)
         .env("PATH", path_env)
         .arg("-c")
         .arg(&command)

@@ -16,16 +16,16 @@ use std::{
 #[derive(Debug, Display)]
 enum PnError {
     /// Script not found when running `pn run`.
-    #[display(fmt = "Missing script: {}", name)]
+    #[display(fmt = "Missing script: {name}")]
     MissingScript { name: String },
     /// Script ran by `pn run` exits with non-zero status code.
-    #[display(fmt = "Command failed with exit code {}", status)]
+    #[display(fmt = "Command failed with exit code {status}")]
     ScriptError { name: String, status: NonZeroI32 },
     /// Subprocess finishes but without a status code.
-    #[display(fmt = "Command {:?} has ended unexpectedly", command)]
+    #[display(fmt = "Command {command:?} has ended unexpectedly")]
     UnexpectedTermination { command: String },
     /// Other errors.
-    #[display(fmt = "{}", error)]
+    #[display(fmt = "{error}")]
     Other { error: Box<dyn Error> },
 }
 

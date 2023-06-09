@@ -19,8 +19,7 @@ fn test_run_script() {
     Command::cargo_bin("pn")
         .unwrap()
         .current_dir(&temp_dir)
-        .arg("run")
-        .arg("test")
+        .args(["run", "test"])
         .assert()
         .success()
         .stdout("hello world\n");
@@ -51,9 +50,7 @@ fn test_workspace_root() {
     Command::cargo_bin("pn")
         .unwrap()
         .current_dir(project_foo_path)
-        .arg("--workspace-root")
-        .arg("run")
-        .arg("test")
+        .args(["--workspace-root", "run", "test"])
         .assert()
         .success()
         .stdout("hello from workspace root\n");

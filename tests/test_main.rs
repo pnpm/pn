@@ -1,7 +1,6 @@
 use assert_cmd::prelude::{CommandCargoExt, OutputAssertExt};
 use build_fs_tree::{dir, file, Build, MergeableFileSystemTree};
-use std::fs;
-use std::process::Command;
+use std::{fs, process::Command};
 
 #[test]
 fn run_script() {

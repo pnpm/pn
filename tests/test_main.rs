@@ -1,13 +1,11 @@
-use assert_cmd::prelude::*;
-use build_fs_tree::*;
-use std::fs;
-use std::process::Command;
+use assert_cmd::prelude::{CommandCargoExt, OutputAssertExt};
+use build_fs_tree::{dir, file, Build, MergeableFileSystemTree};
+use std::{fs, process::Command};
+use tempfile::tempdir;
 
 #[test]
 fn run_script() {
-    // Given
-    // Create a temporary directory and a package.json file
-    let temp_dir = tempfile::tempdir().unwrap();
+    let temp_dir = tempdir().unwrap();
     let package_json_path = temp_dir.path().join("package.json");
     fs::write(
         package_json_path,
@@ -15,8 +13,6 @@ fn run_script() {
     )
     .unwrap();
 
-    // When
-    // Run the CLI with the "run" command
     Command::cargo_bin("pn")
         .unwrap()
         .current_dir(&temp_dir)
@@ -28,13 +24,13 @@ fn run_script() {
 
 #[test]
 fn run_from_workspace_root() {
-    let temp_dir = tempfile::tempdir().unwrap();
+    let temp_dir = tempdir().unwrap();
     let tree = MergeableFileSystemTree::<&str, &str>::from(dir! {
-        "package.json" => build_fs_tree::file!(r#"{"scripts": {"test": "echo hello from workspace root"}}"#),
-        "pnpm-workspace.yaml" => build_fs_tree::file!("packages: ['packages/*']"),
+        "package.json" => file!(r#"{"scripts": {"test": "echo hello from workspace root"}}"#),
+        "pnpm-workspace.yaml" => file!("packages: ['packages/*']"),
         "packages" => dir! {
             "foo" => dir! {
-                "package.json" => build_fs_tree::file!(r#"{"scripts": {"test": "echo hello from foo"}}"#),
+                "package.json" => file!(r#"{"scripts": {"test": "echo hello from foo"}}"#),
             },
         },
     });
@@ -51,7 +47,7 @@ fn run_from_workspace_root() {
 
 #[test]
 fn workspace_root_not_found_error() {
-    let temp_dir = tempfile::tempdir().unwrap();
+    let temp_dir = tempdir().unwrap();
     let package_json_path = temp_dir.path().join("package.json");
     fs::write(
         package_json_path,

@@ -2,6 +2,7 @@ use ansi_term::Color::{Black, Red};
 use clap::*;
 use cli::{Cli, PassedThroughArgs};
 use error::{MainError, PnError};
+use itertools::Itertools;
 use pipe_trait::Pipe;
 use serde::Deserialize;
 use std::{
@@ -56,8 +57,8 @@ fn run() -> Result<(), MainError> {
                 .pipe(serde_json::de::from_reader::<_, NodeManifest>)
                 .map_err(MainError::from_dyn)?;
             if let Some(command) = manifest.scripts.get(&args.script) {
-                eprintln!("> {:?}", command);
-                run_script(args.script, command.clone(), &cwd)
+                eprintln!("> {command}");
+                run_script(&args.script, command, &cwd)
             } else {
                 PnError::MissingScript { name: args.script }
                     .pipe(MainError::Pn)
@@ -66,11 +67,11 @@ fn run() -> Result<(), MainError> {
         }
         cli::Command::Install(args) => handle_passed_through("install", args),
         cli::Command::Update(args) => handle_passed_through("update", args),
-        cli::Command::Other(args) => pass_to_sub((&*args.join(" ")).into()),
+        cli::Command::Other(args) => pass_to_sub(args.join(" ")),
     }
 }
 
-fn run_script(name: String, command: String, cwd: &Path) -> Result<(), MainError> {
+fn run_script(name: &str, command: &str, cwd: &Path) -> Result<(), MainError> {
     let mut path_env = OsString::from("node_modules/.bin");
     if let Some(path) = env::var_os("PATH") {
         path_env.push(":");
@@ -80,7 +81,7 @@ fn run_script(name: String, command: String, cwd: &Path) -> Result<(), MainError
         .current_dir(cwd)
         .env("PATH", path_env)
         .arg("-c")
-        .arg(&command)
+        .arg(command)
         .stdin(Stdio::inherit())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
@@ -92,8 +93,13 @@ fn run_script(name: String, command: String, cwd: &Path) -> Result<(), MainError
         .map(NonZeroI32::new);
     match status {
         Some(None) => return Ok(()),
-        Some(Some(status)) => PnError::ScriptError { name, status },
-        None => PnError::UnexpectedTermination { command },
+        Some(Some(status)) => PnError::ScriptError {
+            name: name.to_string(),
+            status,
+        },
+        None => PnError::UnexpectedTermination {
+            command: command.to_string(),
+        },
     }
     .pipe(MainError::Pn)
     .pipe(Err)
@@ -101,11 +107,11 @@ fn run_script(name: String, command: String, cwd: &Path) -> Result<(), MainError
 
 fn handle_passed_through(command: &str, args: PassedThroughArgs) -> Result<(), MainError> {
     let PassedThroughArgs { mut args } = args;
-    args.insert(0, command.to_string());
+    args.insert(0, command.into());
     pass_to_pnpm(&args)
 }
 
-fn pass_to_pnpm(args: &[String]) -> Result<(), MainError> {
+fn pass_to_pnpm(args: &[OsString]) -> Result<(), MainError> {
     let status = Command::new("pnpm")
         .args(args)
         .stdin(Stdio::inherit())
@@ -121,7 +127,10 @@ fn pass_to_pnpm(args: &[String]) -> Result<(), MainError> {
         Some(None) => return Ok(()),
         Some(Some(status)) => MainError::Sub(status),
         None => MainError::Pn(PnError::UnexpectedTermination {
-            command: format!("pnpm {}", args.join(" ")),
+            command: format!(
+                "pnpm {}",
+                args.iter().map(|x| x.to_string_lossy()).join(" "),
+            ),
         }),
     })
 }

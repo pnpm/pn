@@ -1,5 +1,5 @@
-use assert_cmd::prelude::*;
-use build_fs_tree::*;
+use assert_cmd::prelude::{CommandCargoExt, OutputAssertExt};
+use build_fs_tree::{dir, file, Build as _, MergeableFileSystemTree};
 use std::fs;
 use std::process::Command;
 
@@ -30,11 +30,11 @@ fn run_script() {
 fn run_from_workspace_root() {
     let temp_dir = tempfile::tempdir().unwrap();
     let tree = MergeableFileSystemTree::<&str, &str>::from(dir! {
-        "package.json" => build_fs_tree::file!(r#"{"scripts": {"test": "echo hello from workspace root"}}"#),
-        "pnpm-workspace.yaml" => build_fs_tree::file!("packages: ['packages/*']"),
+        "package.json" => file!(r#"{"scripts": {"test": "echo hello from workspace root"}}"#),
+        "pnpm-workspace.yaml" => file!("packages: ['packages/*']"),
         "packages" => dir! {
             "foo" => dir! {
-                "package.json" => build_fs_tree::file!(r#"{"scripts": {"test": "echo hello from foo"}}"#),
+                "package.json" => file!(r#"{"scripts": {"test": "echo hello from foo"}}"#),
             },
         },
     });

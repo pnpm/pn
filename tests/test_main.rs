@@ -5,8 +5,6 @@ use std::process::Command;
 
 #[test]
 fn run_script() {
-    // Given
-    // Create a temporary directory and a package.json file
     let temp_dir = tempfile::tempdir().unwrap();
     let package_json_path = temp_dir.path().join("package.json");
     fs::write(
@@ -15,8 +13,6 @@ fn run_script() {
     )
     .unwrap();
 
-    // When
-    // Run the CLI with the "run" command
     Command::cargo_bin("pn")
         .unwrap()
         .current_dir(&temp_dir)

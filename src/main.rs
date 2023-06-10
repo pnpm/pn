@@ -74,7 +74,7 @@ fn run() -> Result<(), MainError> {
             args.insert(0, "update".into());
             pass_to_pnpm(&args)
         }
-        cli::Command::Other(args) => pass_to_sub((&*args.join(" ")).into())
+        cli::Command::Other(args) => pass_to_sub((&*args.join(" ")).into()),
     }
 }
 

@@ -14,7 +14,7 @@ pub struct Cli {
 #[derive(Debug, Subcommand)]
 #[clap(rename_all = "kebab-case")]
 pub enum Command {
-    /// Runs a defined package script. 
+    /// Runs a defined package script.
     #[clap(alias = "run-script")]
     Run(RunArgs),
     /// Installs all dependencies of the project in the current working directory.

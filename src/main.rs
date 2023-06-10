@@ -1,6 +1,6 @@
 use ansi_term::Color::{Black, Red};
 use clap::*;
-use cli::Cli;
+use cli::{Cli, ExecCommand, PassedThroughArgs, PassedThroughCommand};
 use error::{MainError, PnError};
 use pipe_trait::Pipe;
 use serde::Deserialize;
@@ -42,11 +42,21 @@ fn main() {
 }
 
 fn run() -> Result<(), MainError> {
-    let cli = Cli::parse();
-    match cli.command {
-        cli::Command::Run(args) => {
+    let Cli {
+        workspace_root,
+        passed_through,
+        exec,
+    } = Cli::parse();
+    match (passed_through, exec) {
+        (None, None) => {
+            panic!("Must specify a command") // TODO: define a proper error message.
+        }
+        (Some(_), Some(_)) => {
+            unreachable!("Clap shouldn't allow this")
+        }
+        (None, Some(ExecCommand::Run(args))) => {
             let mut cwd = env::current_dir().expect("Couldn't find the current working directory");
-            if cli.workspace_root {
+            if workspace_root {
                 cwd = workspace::find_workspace_root(&cwd)?;
             }
             let manifest_path = cwd.join("package.json");
@@ -64,17 +74,15 @@ fn run() -> Result<(), MainError> {
                     .pipe(Err)
             }
         }
-        cli::Command::Install(passed_trough_args) => {
-            let mut args = passed_trough_args.args;
-            args.insert(0, "install".into());
+        (None, Some(ExecCommand::Other(args))) => pass_to_sub((&*args.join(" ")).into()),
+        (Some(PassedThroughArgs { cmd, mut args }), None) => {
+            let cmd = match cmd {
+                PassedThroughCommand::Install => "install".to_string(),
+                PassedThroughCommand::Update => "update".to_string(),
+            };
+            args.insert(0, cmd);
             pass_to_pnpm(&args)
         }
-        cli::Command::Update(passed_trough_args) => {
-            let mut args = passed_trough_args.args;
-            args.insert(0, "update".into());
-            pass_to_pnpm(&args)
-        }
-        cli::Command::Other(args) => pass_to_sub((&*args.join(" ")).into()),
     }
 }
 

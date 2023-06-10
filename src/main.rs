@@ -57,7 +57,7 @@ fn run() -> Result<(), MainError> {
                 .pipe(serde_json::de::from_reader::<_, NodeManifest>)
                 .map_err(MainError::from_dyn)?;
             if let Some(command) = manifest.scripts.get(&args.script) {
-                eprintln!("> {:?}", command);
+                eprintln!("> {}", command);
                 run_script(args.script, command.clone(), &cwd)
             } else {
                 PnError::MissingScript { name: args.script }

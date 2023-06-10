@@ -7,6 +7,7 @@ pub struct Cli {
     /// Run the command on the root workspace project.
     #[clap(short, long)]
     pub workspace_root: bool,
+    /// Command to execute.
     #[clap(subcommand)]
     pub command: Command,
 }

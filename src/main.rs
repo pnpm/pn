@@ -44,7 +44,7 @@ fn main() {
 fn run() -> Result<(), MainError> {
     let cli = Cli::parse();
     match cli.command {
-        Some(cli::Command::Run(args)) => {
+        cli::Command::Run(args) => {
             let mut cwd = env::current_dir().expect("Couldn't find the current working directory");
             if cli.workspace_root {
                 cwd = workspace::find_workspace_root(&cwd)?;
@@ -64,18 +64,17 @@ fn run() -> Result<(), MainError> {
                     .pipe(Err)
             }
         }
-        Some(cli::Command::Install(passed_trough_args)) => {
+        cli::Command::Install(passed_trough_args) => {
             let mut args = passed_trough_args.args;
             args.insert(0, "install".into());
             pass_to_pnpm(&args)
         }
-        Some(cli::Command::Update(passed_trough_args)) => {
+        cli::Command::Update(passed_trough_args) => {
             let mut args = passed_trough_args.args;
             args.insert(0, "update".into());
             pass_to_pnpm(&args)
         }
-        Some(cli::Command::Other(args)) => pass_to_sub((&*args.join(" ")).into()),
-        None => panic!("Couldn't parse the CLI args"),
+        cli::Command::Other(args) => pass_to_sub((&*args.join(" ")).into())
     }
 }
 

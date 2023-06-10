@@ -8,18 +8,24 @@ pub struct Cli {
     #[clap(short, long)]
     pub workspace_root: bool,
     #[clap(subcommand)]
-    pub command: Option<Command>,
+    pub command: Command,
 }
 
 #[derive(Debug, Subcommand)]
 #[clap(rename_all = "kebab-case")]
 pub enum Command {
+    /// Runs a defined package script. 
     #[clap(alias = "run-script")]
     Run(RunArgs),
+    /// Installs all dependencies of the project in the current working directory.
+    /// When executed inside a workspace, installs all dependencies of all projects.
     #[clap(alias = "i")]
     Install(PassedThroughArgs),
+    /// Updates packages to their latest version based on the specified range.
+    /// You can use "*" in package name to update all packages with the same pattern.
     #[clap(alias = "up")]
     Update(PassedThroughArgs),
+    /// Execute a shell command in scope of a project.
     #[clap(external_subcommand)]
     Other(Vec<String>),
 }

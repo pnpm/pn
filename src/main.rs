@@ -67,7 +67,7 @@ fn run() -> Result<(), MainError> {
         }
         cli::Command::Install(args) => handle_passed_through("install", args),
         cli::Command::Update(args) => handle_passed_through("update", args),
-        cli::Command::Other(args) => pass_to_sub((&*args.join(" ")).into()),
+        cli::Command::Other(args) => pass_to_sub(args.join(" ")),
     }
 }
 

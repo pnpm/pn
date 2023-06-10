@@ -1,5 +1,5 @@
 use assert_cmd::prelude::{CommandCargoExt, OutputAssertExt};
-use build_fs_tree::{dir, file, Build as _, MergeableFileSystemTree};
+use build_fs_tree::{dir, file, Build, MergeableFileSystemTree};
 use std::fs;
 use std::process::Command;
 

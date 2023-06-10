@@ -9,7 +9,7 @@ pub fn find_workspace_root(cwd: &Path) -> Result<PathBuf, MainError> {
         WORKSPACE_MANIFEST_FILENAME,
         FindUpOptions {
             kind: FindUpKind::File,
-            cwd: cwd.as_ref(),
+            cwd,
         },
     )
     .map_err(MainError::from_dyn)?;

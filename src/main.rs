@@ -58,7 +58,7 @@ fn run() -> Result<(), MainError> {
                 .map_err(MainError::from_dyn)?;
             if let Some(command) = manifest.scripts.get(&args.script) {
                 eprintln!("> {command}");
-                run_script(args.script, command.clone(), &cwd)
+                run_script(&args.script, command, &cwd)
             } else {
                 PnError::MissingScript { name: args.script }
                     .pipe(MainError::Pn)
@@ -71,7 +71,7 @@ fn run() -> Result<(), MainError> {
     }
 }
 
-fn run_script(name: String, command: String, cwd: &Path) -> Result<(), MainError> {
+fn run_script(name: &str, command: &str, cwd: &Path) -> Result<(), MainError> {
     let mut path_env = OsString::from("node_modules/.bin");
     if let Some(path) = env::var_os("PATH") {
         path_env.push(":");
@@ -81,7 +81,7 @@ fn run_script(name: String, command: String, cwd: &Path) -> Result<(), MainError
         .current_dir(cwd)
         .env("PATH", path_env)
         .arg("-c")
-        .arg(&command)
+        .arg(command)
         .stdin(Stdio::inherit())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
@@ -93,8 +93,13 @@ fn run_script(name: String, command: String, cwd: &Path) -> Result<(), MainError
         .map(NonZeroI32::new);
     match status {
         Some(None) => return Ok(()),
-        Some(Some(status)) => PnError::ScriptError { name, status },
-        None => PnError::UnexpectedTermination { command },
+        Some(Some(status)) => PnError::ScriptError {
+            name: name.to_string(),
+            status,
+        },
+        None => PnError::UnexpectedTermination {
+            command: command.to_string(),
+        },
     }
     .pipe(MainError::Pn)
     .pipe(Err)

@@ -34,7 +34,7 @@ pub enum Command {
 #[derive(Debug, Args)]
 #[clap(rename_all = "kebab-case")]
 pub struct PassedThroughArgs {
-    pub args: Vec<String>,
+    pub args: Vec<OsString>,
 }
 
 /// Runs a defined package script.

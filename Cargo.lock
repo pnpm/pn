@@ -364,6 +364,7 @@ dependencies = [
  "build-fs-tree",
  "clap",
  "derive_more",
+ "itertools",
  "lets_find_up",
  "pipe-trait",
  "serde",

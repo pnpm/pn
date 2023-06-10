@@ -2,6 +2,7 @@ use ansi_term::Color::{Black, Red};
 use clap::*;
 use cli::{Cli, PassedThroughArgs};
 use error::{MainError, PnError};
+use itertools::Itertools;
 use pipe_trait::Pipe;
 use serde::Deserialize;
 use std::{
@@ -101,11 +102,11 @@ fn run_script(name: String, command: String, cwd: &Path) -> Result<(), MainError
 
 fn handle_passed_through(command: &str, args: PassedThroughArgs) -> Result<(), MainError> {
     let PassedThroughArgs { mut args } = args;
-    args.insert(0, command.to_string());
+    args.insert(0, command.into());
     pass_to_pnpm(&args)
 }
 
-fn pass_to_pnpm(args: &[String]) -> Result<(), MainError> {
+fn pass_to_pnpm(args: &[OsString]) -> Result<(), MainError> {
     let status = Command::new("pnpm")
         .args(args)
         .stdin(Stdio::inherit())
@@ -121,7 +122,10 @@ fn pass_to_pnpm(args: &[String]) -> Result<(), MainError> {
         Some(None) => return Ok(()),
         Some(Some(status)) => MainError::Sub(status),
         None => MainError::Pn(PnError::UnexpectedTermination {
-            command: format!("pnpm {}", args.join(" ")),
+            command: format!(
+                "pnpm {}",
+                args.iter().map(|x| x.to_string_lossy()).join(" "),
+            ),
         }),
     })
 }

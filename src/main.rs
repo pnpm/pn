@@ -77,7 +77,7 @@ fn run() -> Result<(), MainError> {
     }
 }
 
-fn run_script(name: String, command: String, cwd: &dyn AsRef<Path>) -> Result<(), MainError> {
+fn run_script(name: String, command: String, cwd: &Path) -> Result<(), MainError> {
     let mut path_env = OsString::from("node_modules/.bin");
     if let Some(path) = env::var_os("PATH") {
         path_env.push(":");

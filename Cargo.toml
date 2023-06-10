@@ -12,8 +12,8 @@ derive_more = "0.99.14"
 pipe-trait = "0.4.0"
 clap = { version = "4.3.2", features = ["derive"] }
 lets_find_up = "0.0.3"
-build-fs-tree = "0.4.1"
 
 [dev-dependencies]
 assert_cmd = "2.0.5"
+build-fs-tree = "0.4.1"
 tempfile = "3.5.0"

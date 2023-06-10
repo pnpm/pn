@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 const WORKSPACE_MANIFEST_FILENAME: &str = "pnpm-workspace.yaml";
 
-pub fn find_workspace_root(cwd: &dyn AsRef<Path>) -> Result<PathBuf, MainError> {
+pub fn find_workspace_root(cwd: &Path) -> Result<PathBuf, MainError> {
     let workspace_manifest_location = find_up_with(
         WORKSPACE_MANIFEST_FILENAME,
         FindUpOptions {

@@ -66,6 +66,7 @@ fn workspace_root_not_found_error() {
         .assert()
         .failure();
     let output = assertion.get_output();
-    let stderr = String::from_utf8(output.stderr.clone()).unwrap();
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    eprintln!("STDERR:\n{stderr}\n");
     assert!(stderr.contains("--workspace-root may only be used in a workspace"));
 }

@@ -1,5 +1,5 @@
 use ansi_term::Color::{Black, Red};
-use clap::*;
+use clap::Parser;
 use cli::{Cli, PassedThroughArgs};
 use error::{MainError, PnError};
 use itertools::Itertools;

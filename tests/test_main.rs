@@ -1,9 +1,10 @@
 use assert_cmd::prelude::*;
+use build_fs_tree::*;
 use std::fs;
 use std::process::Command;
 
 #[test]
-fn test_run_script() {
+fn run_script() {
     // Given
     // Create a temporary directory and a package.json file
     let temp_dir = tempfile::tempdir().unwrap();
@@ -26,30 +27,22 @@ fn test_run_script() {
 }
 
 #[test]
-fn test_workspace_root() {
+fn run_from_workspace_root() {
     let temp_dir = tempfile::tempdir().unwrap();
-    let temp_dir_path = temp_dir.path();
-    fs::write(
-        temp_dir_path.join("package.json"),
-        r#"{"scripts": {"test": "echo hello from workspace root"}}"#,
-    )
-    .unwrap();
-    fs::write(
-        temp_dir_path.join("pnpm-workspace.yaml"),
-        r#"packages: ["packages/*"]"#,
-    )
-    .unwrap();
-    let project_foo_path = temp_dir_path.join("packages/foo");
-    fs::create_dir_all(&project_foo_path).unwrap();
-    fs::write(
-        project_foo_path.join("package.json"),
-        r#"{"scripts": {"test": "echo hello from foo"}}"#,
-    )
-    .unwrap();
+    let tree = MergeableFileSystemTree::<&str, &str>::from(dir! {
+        "package.json" => build_fs_tree::file!(r#"{"scripts": {"test": "echo hello from workspace root"}}"#),
+        "pnpm-workspace.yaml" => build_fs_tree::file!("packages: ['packages/*']"),
+        "packages" => dir! {
+            "foo" => dir! {
+                "package.json" => build_fs_tree::file!(r#"{"scripts": {"test": "echo hello from foo"}}"#),
+            },
+        },
+    });
+    tree.build(&temp_dir.path().to_path_buf()).unwrap();
 
     Command::cargo_bin("pn")
         .unwrap()
-        .current_dir(project_foo_path)
+        .current_dir(temp_dir.path().join("packages/foo"))
         .args(["--workspace-root", "run", "test"])
         .assert()
         .success()
@@ -57,7 +50,7 @@ fn test_workspace_root() {
 }
 
 #[test]
-fn test_workspace_root_not_found() {
+fn workspace_root_not_found_error() {
     let temp_dir = tempfile::tempdir().unwrap();
     let package_json_path = temp_dir.path().join("package.json");
     fs::write(

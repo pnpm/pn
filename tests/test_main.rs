@@ -1,10 +1,11 @@
 use assert_cmd::prelude::{CommandCargoExt, OutputAssertExt};
 use build_fs_tree::{dir, file, Build, MergeableFileSystemTree};
 use std::{fs, process::Command};
+use tempfile::tempdir;
 
 #[test]
 fn run_script() {
-    let temp_dir = tempfile::tempdir().unwrap();
+    let temp_dir = tempdir().unwrap();
     let package_json_path = temp_dir.path().join("package.json");
     fs::write(
         package_json_path,
@@ -23,7 +24,7 @@ fn run_script() {
 
 #[test]
 fn run_from_workspace_root() {
-    let temp_dir = tempfile::tempdir().unwrap();
+    let temp_dir = tempdir().unwrap();
     let tree = MergeableFileSystemTree::<&str, &str>::from(dir! {
         "package.json" => file!(r#"{"scripts": {"test": "echo hello from workspace root"}}"#),
         "pnpm-workspace.yaml" => file!("packages: ['packages/*']"),
@@ -46,7 +47,7 @@ fn run_from_workspace_root() {
 
 #[test]
 fn workspace_root_not_found_error() {
-    let temp_dir = tempfile::tempdir().unwrap();
+    let temp_dir = tempdir().unwrap();
     let package_json_path = temp_dir.path().join("package.json");
     fs::write(
         package_json_path,

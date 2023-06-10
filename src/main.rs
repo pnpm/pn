@@ -1,6 +1,6 @@
 use ansi_term::Color::{Black, Red};
 use clap::*;
-use cli::Cli;
+use cli::{Cli, PassedThroughArgs};
 use error::{MainError, PnError};
 use pipe_trait::Pipe;
 use serde::Deserialize;
@@ -64,16 +64,8 @@ fn run() -> Result<(), MainError> {
                     .pipe(Err)
             }
         }
-        cli::Command::Install(passed_trough_args) => {
-            let mut args = passed_trough_args.args;
-            args.insert(0, "install".into());
-            pass_to_pnpm(&args)
-        }
-        cli::Command::Update(passed_trough_args) => {
-            let mut args = passed_trough_args.args;
-            args.insert(0, "update".into());
-            pass_to_pnpm(&args)
-        }
+        cli::Command::Install(args) => handle_passed_through("install", args),
+        cli::Command::Update(args) => handle_passed_through("update", args),
         cli::Command::Other(args) => pass_to_sub((&*args.join(" ")).into()),
     }
 }
@@ -105,6 +97,12 @@ fn run_script(name: String, command: String, cwd: &Path) -> Result<(), MainError
     }
     .pipe(MainError::Pn)
     .pipe(Err)
+}
+
+fn handle_passed_through(command: &str, args: PassedThroughArgs) -> Result<(), MainError> {
+    let PassedThroughArgs { mut args } = args;
+    args.insert(0, command.to_string());
+    pass_to_pnpm(&args)
 }
 
 fn pass_to_pnpm(args: &[String]) -> Result<(), MainError> {

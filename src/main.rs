@@ -1,19 +1,20 @@
 use ansi_term::Color::{Black, Red};
 use clap::Parser;
-use derive_more::Display;
-use lets_find_up::*;
+use error::{MainError, PnError};
 use pipe_trait::Pipe;
 use serde::Deserialize;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::{
     collections::HashMap,
     env,
-    error::Error,
     ffi::OsString,
     fs::File,
     num::NonZeroI32,
     process::{exit, Command, Stdio},
 };
+
+mod error;
+mod workspace;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about=None)]
@@ -22,42 +23,6 @@ struct Cli {
     workspace_root: bool,
 
     name: Vec<String>,
-}
-
-/// Error types emitted by `pn` itself.
-#[derive(Debug, Display)]
-enum PnError {
-    /// Script not found when running `pn run`.
-    #[display(fmt = "Missing script: {name}")]
-    MissingScript { name: String },
-    /// Script ran by `pn run` exits with non-zero status code.
-    #[display(fmt = "Command failed with exit code {status}")]
-    ScriptError { name: String, status: NonZeroI32 },
-    /// Subprocess finishes but without a status code.
-    #[display(fmt = "Command {command:?} has ended unexpectedly")]
-    UnexpectedTermination { command: String },
-    #[display(fmt = "--workspace-root may only be used in a workspace")]
-    NotInWorkspace,
-    /// Other errors.
-    #[display(fmt = "{error}")]
-    Other { error: Box<dyn Error> },
-}
-
-/// The main error type.
-#[derive(Debug)]
-enum MainError {
-    /// Errors emitted by `pn` itself.
-    Pn(PnError),
-    /// The subprocess that takes control exits with non-zero status code.
-    Sub(NonZeroI32),
-}
-
-impl MainError {
-    fn from_dyn(error: impl Error + 'static) -> Self {
-        MainError::Pn(PnError::Other {
-            error: Box::new(error),
-        })
-    }
 }
 
 /// Structure of `package.json`.
@@ -89,7 +54,7 @@ fn run() -> Result<(), MainError> {
         "run" | "run-script" => {
             let mut cwd = env::current_dir().expect("Couldn't find the current working directory");
             if cli.workspace_root {
-                cwd = find_workspace_root(&cwd)?;
+                cwd = workspace::find_workspace_root(&cwd)?;
             }
             let manifest_path = cwd.join("package.json");
             let manifest = manifest_path
@@ -109,24 +74,6 @@ fn run() -> Result<(), MainError> {
         }
         "install" | "i" | "update" | "up" => pass_to_pnpm(&cli.name[0..]),
         _ => pass_to_sub(cli.name[0..].join(" ")),
-    }
-}
-
-fn find_workspace_root(cwd: &dyn AsRef<Path>) -> Result<PathBuf, MainError> {
-    let workspace_manifest_location = find_up_with(
-        "pnpm-workspace.yaml",
-        FindUpOptions {
-            kind: FindUpKind::File,
-            cwd: cwd.as_ref(),
-        },
-    )
-    .map_err(MainError::from_dyn)?;
-    match workspace_manifest_location {
-        Some(path) => Ok(path
-            .parent()
-            .ok_or(MainError::Pn(PnError::NotInWorkspace))?
-            .to_path_buf()),
-        None => Err(MainError::Pn(PnError::NotInWorkspace)),
     }
 }
 

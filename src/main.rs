@@ -1,5 +1,6 @@
 use ansi_term::Color::{Black, Red};
-use clap::Parser;
+use clap::*;
+use cli::Cli;
 use error::{MainError, PnError};
 use pipe_trait::Pipe;
 use serde::Deserialize;
@@ -13,17 +14,9 @@ use std::{
     process::{exit, Command, Stdio},
 };
 
+mod cli;
 mod error;
 mod workspace;
-
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about=None)]
-struct Cli {
-    #[arg(short, long)]
-    workspace_root: bool,
-
-    name: Vec<String>,
-}
 
 /// Structure of `package.json`.
 #[derive(Debug, Clone, Deserialize)]
@@ -50,8 +43,8 @@ fn main() {
 
 fn run() -> Result<(), MainError> {
     let cli = Cli::parse();
-    match &*cli.name[0] {
-        "run" | "run-script" => {
+    match cli.command {
+        Some(cli::Command::Run(args)) => {
             let mut cwd = env::current_dir().expect("Couldn't find the current working directory");
             if cli.workspace_root {
                 cwd = workspace::find_workspace_root(&cwd)?;
@@ -62,7 +55,7 @@ fn run() -> Result<(), MainError> {
                 .map_err(MainError::from_dyn)?
                 .pipe(serde_json::de::from_reader::<_, NodeManifest>)
                 .map_err(MainError::from_dyn)?;
-            let name = cli.name[1].clone();
+            let name = args.script.clone();
             if let Some(command) = manifest.scripts.get(&name) {
                 eprintln!("> {:?}", command);
                 run_script(name, command.clone(), &cwd)
@@ -72,8 +65,18 @@ fn run() -> Result<(), MainError> {
                     .pipe(Err)
             }
         }
-        "install" | "i" | "update" | "up" => pass_to_pnpm(&cli.name[0..]),
-        _ => pass_to_sub(cli.name[0..].join(" ")),
+        Some(cli::Command::Install(passed_trough_args)) => {
+            let mut args = passed_trough_args.args;
+            args.insert(0, "install".into());
+            pass_to_pnpm(&args)
+        }
+        Some(cli::Command::Update(passed_trough_args)) => {
+            let mut args = passed_trough_args.args;
+            args.insert(0, "update".into());
+            pass_to_pnpm(&args)
+        }
+        Some(cli::Command::Other(args)) => pass_to_sub((&*args.join(" ")).into()),
+        None => panic!("Couldn't parse the CLI args"),
     }
 }
 

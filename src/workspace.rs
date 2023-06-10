@@ -5,15 +5,12 @@ use std::path::{Path, PathBuf};
 const WORKSPACE_MANIFEST_FILENAME: &str = "pnpm-workspace.yaml";
 
 pub fn find_workspace_root(cwd: &Path) -> Result<PathBuf, MainError> {
-    let workspace_manifest_location = find_up_with(
-        WORKSPACE_MANIFEST_FILENAME,
-        FindUpOptions {
-            kind: FindUpKind::File,
-            cwd,
-        },
-    )
-    .map_err(MainError::from_dyn)?;
-    workspace_manifest_location
+    let options = FindUpOptions {
+        kind: FindUpKind::File,
+        cwd,
+    };
+    find_up_with(WORKSPACE_MANIFEST_FILENAME, options)
+        .map_err(MainError::from_dyn)?
         .and_then(|x| x.parent().map(Path::to_path_buf))
         .ok_or(MainError::Pn(PnError::NotInWorkspace))
 }

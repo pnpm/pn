@@ -4,13 +4,13 @@ use cli::Cli;
 use error::{MainError, PnError};
 use pipe_trait::Pipe;
 use serde::Deserialize;
-use std::path::Path;
 use std::{
     collections::HashMap,
     env,
     ffi::OsString,
     fs::File,
     num::NonZeroI32,
+    path::Path,
     process::{exit, Command, Stdio},
 };
 

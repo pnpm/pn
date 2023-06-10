@@ -55,12 +55,11 @@ fn run() -> Result<(), MainError> {
                 .map_err(MainError::from_dyn)?
                 .pipe(serde_json::de::from_reader::<_, NodeManifest>)
                 .map_err(MainError::from_dyn)?;
-            let name = args.script.clone();
-            if let Some(command) = manifest.scripts.get(&name) {
+            if let Some(command) = manifest.scripts.get(&args.script) {
                 eprintln!("> {:?}", command);
-                run_script(name, command.clone(), &cwd)
+                run_script(args.script, command.clone(), &cwd)
             } else {
-                PnError::MissingScript { name }
+                PnError::MissingScript { name: args.script }
                     .pipe(MainError::Pn)
                     .pipe(Err)
             }

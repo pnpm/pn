@@ -34,7 +34,7 @@ fn run_from_workspace_root() {
             },
         },
     });
-    tree.build(&temp_dir.path().to_path_buf()).unwrap();
+    tree.build(&temp_dir).unwrap();
 
     Command::cargo_bin("pn")
         .unwrap()

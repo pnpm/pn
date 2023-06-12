@@ -158,9 +158,9 @@ fn get_prepended_path_env(prepend_path: &str) -> OsString {
         let mut prepend_path = OsString::from(prepend_path);
         prepend_path.push(":");
         prepend_path.push(path);
-        return prepend_path;
+        prepend_path
     } else {
-        return OsString::from(prepend_path);
+        OsString::from(prepend_path)
     }
 }
 

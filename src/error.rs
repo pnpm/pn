@@ -1,5 +1,5 @@
 use derive_more::Display;
-use std::{error::Error, num::NonZeroI32};
+use std::{error::Error, num::NonZeroI32, path::PathBuf};
 
 /// Error types emitted by `pn` itself.
 #[derive(Debug, Display)]
@@ -15,6 +15,9 @@ pub enum PnError {
     UnexpectedTermination { command: String },
     #[display(fmt = "--workspace-root may only be used in a workspace")]
     NotInWorkspace,
+    /// No package manifest
+    #[display(fmt = "No package.json found in {dir:?}")]
+    NoPkgManifest { dir: PathBuf },
     /// Other errors.
     #[display(fmt = "{error}")]
     Other { error: Box<dyn Error> },

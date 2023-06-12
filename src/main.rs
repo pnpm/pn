@@ -10,6 +10,7 @@ use std::{
     env,
     ffi::OsString,
     fs::File,
+    io::ErrorKind,
     num::NonZeroI32,
     path::Path,
     process::{exit, Command, Stdio},
@@ -53,7 +54,13 @@ fn run() -> Result<(), MainError> {
             let manifest_path = cwd.join("package.json");
             let manifest = manifest_path
                 .pipe(File::open)
-                .map_err(MainError::from_dyn)?
+                .map_err(|err| {
+                    if err.kind() == ErrorKind::NotFound {
+                        MainError::Pn(PnError::NoPkgManifest { dir: cwd.clone() })
+                    } else {
+                        MainError::from_dyn(err)
+                    }
+                })?
                 .pipe(serde_json::de::from_reader::<_, NodeManifest>)
                 .map_err(MainError::from_dyn)?;
             if let Some(command) = manifest.scripts.get(&args.script) {

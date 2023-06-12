@@ -11,7 +11,7 @@ use std::{
     ffi::OsString,
     fs::File,
     num::NonZeroI32,
-    path::Path,
+    path::{Path, PathBuf},
     process::{exit, Command, Stdio},
 };
 
@@ -155,10 +155,12 @@ fn pass_to_sub(command: String) -> Result<(), MainError> {
 
 fn get_prepended_path_env(prepend_path: &str) -> OsString {
     if let Some(path) = env::var_os("PATH") {
-        let mut prepend_path = OsString::from(prepend_path);
-        prepend_path.push(":");
-        prepend_path.push(path);
-        prepend_path
+        let mut new_paths: Vec<PathBuf> = vec![PathBuf::from(prepend_path)];
+        let mut current_paths = env::split_paths(&path).collect::<Vec<_>>();
+        new_paths.append(&mut current_paths);
+
+        let new_path = env::join_paths(new_paths.iter()).expect("Failed to prepend path");
+        new_path
     } else {
         OsString::from(prepend_path)
     }
@@ -173,7 +175,7 @@ fn test_get_prepended_path_env() {
     let prepended_path_env = get_prepended_path_env(bin_dir);
 
     // Check that the node_modules directory was added to the PATH variable
-    let actual_paths = std::env::split_paths(&prepended_path_env).collect::<Vec<_>>();
+    let actual_paths = env::split_paths(&prepended_path_env).collect::<Vec<_>>();
     let first_path = actual_paths.first().unwrap();
     assert_eq!(first_path, &PathBuf::from(bin_dir));
 }

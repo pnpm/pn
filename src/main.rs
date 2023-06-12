@@ -10,7 +10,7 @@ use std::{
     env,
     ffi::OsString,
     fs::File,
-    io::{Error, ErrorKind},
+    io::ErrorKind,
     num::NonZeroI32,
     path::{Path, PathBuf},
     process::{exit, Command, Stdio},
@@ -52,11 +52,7 @@ fn run() -> Result<(), MainError> {
                 cwd = workspace::find_workspace_root(&cwd)?;
             }
             let manifest_path = cwd.join("package.json");
-            let manifest = manifest_path
-                .pipe(File::open)
-                .map_err(|err| handle_no_package_manifest_error(err, cwd.clone()))?
-                .pipe(serde_json::de::from_reader::<_, NodeManifest>)
-                .map_err(MainError::from_dyn)?;
+            let manifest = read_package_manifest(&manifest_path)?;
             if let Some(command) = manifest.scripts.get(&args.script) {
                 eprintln!("> {command}");
                 run_script(&args.script, command, &cwd)
@@ -162,9 +158,38 @@ fn pass_to_sub(command: String) -> Result<(), MainError> {
     })
 }
 
-fn handle_no_package_manifest_error(err: Error, cwd: PathBuf) -> MainError {
-    match err.kind() {
-        ErrorKind::NotFound => MainError::Pn(PnError::NoPkgManifest { dir: cwd }),
-        _ => MainError::from_dyn(err),
-    }
+fn read_package_manifest(manifest_path: &PathBuf) -> Result<NodeManifest, MainError> {
+    manifest_path
+        .pipe(File::open)
+        .map_err(|err| match err.kind() {
+            ErrorKind::NotFound => {
+                let parent_path = manifest_path
+                    .parent()
+                    .expect("Could not get parent directory")
+                    .to_path_buf();
+                MainError::Pn(PnError::NoPkgManifest { dir: parent_path })
+            }
+            _ => MainError::from_dyn(err),
+        })?
+        .pipe(serde_json::de::from_reader::<_, NodeManifest>)
+        .map_err(MainError::from_dyn)
+}
+
+#[test]
+fn test_read_package_manifest() {
+    use std::fs;
+    use tempfile::tempdir;
+
+    let temp_dir = tempdir().unwrap();
+    let package_json_path = temp_dir.path().join("package.json");
+    fs::write(
+        package_json_path.clone(),
+        r#"{"scripts": {"test": "echo hello world"}}"#,
+    )
+    .unwrap();
+
+    let package_manifest = read_package_manifest(&package_json_path).unwrap();
+    let test_script = package_manifest.scripts.get("test");
+
+    assert_eq!(test_script, Some(&String::from("echo hello world")));
 }

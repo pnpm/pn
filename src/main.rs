@@ -72,11 +72,7 @@ fn run() -> Result<(), MainError> {
 }
 
 fn run_script(name: &str, command: &str, cwd: &Path) -> Result<(), MainError> {
-    let mut path_env = OsString::from("node_modules/.bin");
-    if let Some(path) = env::var_os("PATH") {
-        path_env.push(":");
-        path_env.push(path);
-    }
+    let path_env = get_prepended_path_env("node_modules/.bin");
     let status = Command::new("sh")
         .current_dir(cwd)
         .env("PATH", path_env)
@@ -136,11 +132,7 @@ fn pass_to_pnpm(args: &[OsString]) -> Result<(), MainError> {
 }
 
 fn pass_to_sub(command: String) -> Result<(), MainError> {
-    let mut path_env = OsString::from("node_modules/.bin");
-    if let Some(path) = env::var_os("PATH") {
-        path_env.push(":");
-        path_env.push(path);
-    }
+    let path_env = get_prepended_path_env("node_modules/.bin");
     let status = Command::new("sh")
         .env("PATH", path_env)
         .arg("-c")
@@ -159,4 +151,29 @@ fn pass_to_sub(command: String) -> Result<(), MainError> {
         Some(Some(status)) => MainError::Sub(status),
         None => MainError::Pn(PnError::UnexpectedTermination { command }),
     })
+}
+
+fn get_prepended_path_env(prepend_path: &str) -> OsString {
+    if let Some(path) = env::var_os("PATH") {
+        let mut prepend_path = OsString::from(prepend_path);
+        prepend_path.push(":");
+        prepend_path.push(path);
+        return prepend_path;
+    } else {
+        return OsString::from(prepend_path);
+    }
+}
+
+#[test]
+fn test_get_prepended_path_env() {
+    #[allow(unused_imports)]
+    use std::path::PathBuf;
+
+    let bin_dir = "node_modules/.bin";
+    let prepended_path_env = get_prepended_path_env(bin_dir);
+
+    // Check that the node_modules directory was added to the PATH variable
+    let actual_paths = std::env::split_paths(&prepended_path_env).collect::<Vec<_>>();
+    let first_path = actual_paths.first().unwrap();
+    assert_eq!(first_path, &PathBuf::from(bin_dir));
 }

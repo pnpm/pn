@@ -66,3 +66,25 @@ fn workspace_root_not_found_error() {
     eprintln!("STDERR:\n{stderr}\n");
     assert!(stderr.contains("--workspace-root may only be used in a workspace"));
 }
+
+#[test]
+fn no_package_manifest_error() {
+    let temp_dir = tempdir().unwrap();
+    let assertion = Command::cargo_bin("pn")
+        .unwrap()
+        .current_dir(&temp_dir)
+        .args(["run", "test"])
+        .assert()
+        .failure();
+    let output = assertion.get_output();
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    eprintln!("STDERR:\n{stderr}\n");
+    assert!(stderr.contains("No package.json found in"));
+    let expected_path = temp_dir.path().display().to_string().replace('\\', "\\\\");
+    assert!(
+        stderr.contains(&expected_path),
+        "stderr {:?} does not contain expected path {:?}",
+        stderr,
+        expected_path
+    );
+}

@@ -10,9 +10,9 @@ use std::{
     env,
     ffi::OsString,
     fs::File,
-    io::ErrorKind,
+    io::{Error, ErrorKind},
     num::NonZeroI32,
-    path::Path,
+    path::{Path, PathBuf},
     process::{exit, Command, Stdio},
 };
 
@@ -54,13 +54,7 @@ fn run() -> Result<(), MainError> {
             let manifest_path = cwd.join("package.json");
             let manifest = manifest_path
                 .pipe(File::open)
-                .map_err(|err| {
-                    if err.kind() == ErrorKind::NotFound {
-                        MainError::Pn(PnError::NoPkgManifest { dir: cwd.clone() })
-                    } else {
-                        MainError::from_dyn(err)
-                    }
-                })?
+                .map_err(|err| handle_no_package_manifest_error(err, cwd.clone()))?
                 .pipe(serde_json::de::from_reader::<_, NodeManifest>)
                 .map_err(MainError::from_dyn)?;
             if let Some(command) = manifest.scripts.get(&args.script) {
@@ -166,4 +160,11 @@ fn pass_to_sub(command: String) -> Result<(), MainError> {
         Some(Some(status)) => MainError::Sub(status),
         None => MainError::Pn(PnError::UnexpectedTermination { command }),
     })
+}
+
+fn handle_no_package_manifest_error(err: Error, cwd: PathBuf) -> MainError {
+    match err.kind() {
+        ErrorKind::NotFound => MainError::Pn(PnError::NoPkgManifest { dir: cwd }),
+        _ => MainError::from_dyn(err),
+    }
 }

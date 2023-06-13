@@ -11,7 +11,7 @@ use std::{
     ffi::OsString,
     fs::File,
     num::NonZeroI32,
-    path::{Path, PathBuf},
+    path::Path,
     process::{exit, Command, Stdio},
 };
 
@@ -72,7 +72,7 @@ fn run() -> Result<(), MainError> {
 }
 
 fn run_script(name: &str, command: &str, cwd: &Path) -> Result<(), MainError> {
-    let path_env = create_path_env(Path::new("node_modules").join(".bin"));
+    let path_env = create_path_env();
     let status = Command::new("sh")
         .current_dir(cwd)
         .env("PATH", path_env)
@@ -132,7 +132,7 @@ fn pass_to_pnpm(args: &[OsString]) -> Result<(), MainError> {
 }
 
 fn pass_to_sub(command: String) -> Result<(), MainError> {
-    let path_env = create_path_env(Path::new("node_modules").join(".bin"));
+    let path_env = create_path_env();
     let status = Command::new("sh")
         .env("PATH", path_env)
         .arg("-c")
@@ -153,7 +153,8 @@ fn pass_to_sub(command: String) -> Result<(), MainError> {
     })
 }
 
-fn create_path_env(bin_path: PathBuf) -> OsString {
+fn create_path_env() -> OsString {
+    let bin_path = Path::new("node_modules").join(".bin");
     if let Some(path) = env::var_os("PATH") {
         bin_path
             .pipe(std::iter::once)
@@ -167,9 +168,9 @@ fn create_path_env(bin_path: PathBuf) -> OsString {
 
 #[test]
 fn test_create_path_env() {
-    let node_modules_bin_path = Path::new("node_modules").join(".bin");
-    let prepended_path_env = create_path_env(node_modules_bin_path.clone());
+    let bin_path = Path::new("node_modules").join(".bin");
+    let path_env = create_path_env();
 
-    let first_path = env::split_paths(&prepended_path_env).next();
-    assert_eq!(first_path, Some(node_modules_bin_path));
+    let first_path = env::split_paths(&path_env).next();
+    assert_eq!(first_path, Some(bin_path));
 }

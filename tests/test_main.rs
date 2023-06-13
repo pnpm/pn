@@ -86,10 +86,5 @@ fn no_package_manifest_error() {
         .display()
         .to_string()
         .replace('\\', "\\\\");
-    assert!(
-        stderr.contains(&expected_path),
-        "stderr {:?} does not contain expected path {:?}",
-        stderr,
-        expected_path
-    );
+    assert!(stderr.contains(&expected_path));
 }

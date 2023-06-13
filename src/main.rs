@@ -155,12 +155,12 @@ fn pass_to_sub(command: String) -> Result<(), MainError> {
 
 fn get_prepended_path_env(prepend_path: &str) -> OsString {
     if let Some(path) = env::var_os("PATH") {
-        let mut new_paths: Vec<PathBuf> = vec![PathBuf::from(prepend_path)];
-        let mut current_paths = env::split_paths(&path).collect::<Vec<_>>();
-        new_paths.append(&mut current_paths);
-
-        let new_path = env::join_paths(new_paths.iter()).expect("Failed to prepend path");
-        new_path
+        prepend_path
+            .pipe(PathBuf::from)
+            .pipe(std::iter::once)
+            .chain(env::split_paths(&path))
+            .pipe(env::join_paths)
+            .expect("Failed to prepend path") // TODO: propagate JoinPathError to main as a meaningful error message
     } else {
         OsString::from(prepend_path)
     }
@@ -168,14 +168,9 @@ fn get_prepended_path_env(prepend_path: &str) -> OsString {
 
 #[test]
 fn test_get_prepended_path_env() {
-    #[allow(unused_imports)]
-    use std::path::PathBuf;
-
     let bin_dir = "node_modules/.bin";
     let prepended_path_env = get_prepended_path_env(bin_dir);
 
-    // Check that the node_modules directory was added to the PATH variable
-    let actual_paths = env::split_paths(&prepended_path_env).collect::<Vec<_>>();
-    let first_path = actual_paths.first().unwrap();
-    assert_eq!(first_path, &PathBuf::from(bin_dir));
+    let first_path = env::split_paths(&prepended_path_env).next();
+    assert_eq!(first_path, Some(PathBuf::from(bin_dir)));
 }

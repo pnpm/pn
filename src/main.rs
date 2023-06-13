@@ -178,7 +178,6 @@ fn read_package_manifest(manifest_path: &Path) -> Result<NodeManifest, MainError
 
 #[test]
 fn test_read_package_manifest_ok() {
-    use serde_json::to_string_pretty;
     use std::fs;
     use tempfile::tempdir;
 
@@ -198,7 +197,7 @@ fn test_read_package_manifest_ok() {
             "test": "echo hello world"
         }
     })
-    .pipe_ref(to_string_pretty)
+    .pipe_ref(serde_json::to_string_pretty)
     .unwrap();
 
     assert_eq!(received, expected);

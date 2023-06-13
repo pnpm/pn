@@ -169,7 +169,7 @@ fn read_package_manifest(manifest_path: &Path) -> Result<NodeManifest, MainError
         })?
         .pipe(serde_json::de::from_reader::<_, NodeManifest>)
         .map_err(|err| {
-            MainError::Pn(PnError::ParseJSONError {
+            MainError::Pn(PnError::ParseJsonError {
                 file: manifest_path.to_path_buf(),
                 message: err.to_string(),
             })
@@ -225,7 +225,7 @@ fn test_read_package_manifest_error() {
 
     let expected_display = format!(
         "{:?}",
-        MainError::Pn(PnError::ParseJSONError {
+        MainError::Pn(PnError::ParseJsonError {
             file: package_json_path,
             message: String::from("trailing comma at line 1 column 41")
         })

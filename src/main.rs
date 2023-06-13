@@ -168,9 +168,9 @@ fn create_path_env() -> OsString {
 
 #[test]
 fn test_create_path_env() {
-    let node_modules_bin_path = Path::new("node_modules").join(".bin");
-    let prepended_path_env = create_path_env();
+    let bin_path = Path::new("node_modules").join(".bin");
+    let path_env = create_path_env();
 
-    let first_path = env::split_paths(&prepended_path_env).next();
-    assert_eq!(first_path, Some(node_modules_bin_path));
+    let first_path = env::split_paths(&path_env).next();
+    assert_eq!(first_path, Some(bin_path));
 }

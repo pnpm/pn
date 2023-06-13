@@ -86,5 +86,6 @@ fn no_package_manifest_error() {
         .display()
         .to_string()
         .replace('\\', "\\\\");
+    dbg!(&expected_path);
     assert!(stderr.contains(&expected_path));
 }

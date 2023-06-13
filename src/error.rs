@@ -16,8 +16,8 @@ pub enum PnError {
     #[display(fmt = "--workspace-root may only be used in a workspace")]
     NotInWorkspace,
     /// No package manifest.
-    #[display(fmt = "No package.json found in {dir:?}")]
-    NoPkgManifest { dir: PathBuf },
+    #[display(fmt = "File not found: {file:?}")]
+    NoPkgManifest { file: PathBuf },
     /// Other errors.
     #[display(fmt = "{error}")]
     Other { error: Box<dyn Error> },

@@ -4,7 +4,7 @@ use cli::{Cli, PassedThroughArgs};
 use error::{MainError, PnError};
 use itertools::Itertools;
 use pipe_trait::Pipe;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     env,
@@ -12,7 +12,7 @@ use std::{
     fs::File,
     io::ErrorKind,
     num::NonZeroI32,
-    path::{Path, PathBuf},
+    path::Path,
     process::{exit, Command, Stdio},
 };
 
@@ -21,7 +21,7 @@ mod error;
 mod workspace;
 
 /// Structure of `package.json`.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 struct NodeManifest {
     #[serde(default)]
@@ -158,17 +158,13 @@ fn pass_to_sub(command: String) -> Result<(), MainError> {
     })
 }
 
-fn read_package_manifest(manifest_path: &PathBuf) -> Result<NodeManifest, MainError> {
+fn read_package_manifest(manifest_path: &Path) -> Result<NodeManifest, MainError> {
     manifest_path
         .pipe(File::open)
         .map_err(|err| match err.kind() {
-            ErrorKind::NotFound => {
-                let parent_path = manifest_path
-                    .parent()
-                    .expect("Could not get parent directory")
-                    .to_path_buf();
-                MainError::Pn(PnError::NoPkgManifest { dir: parent_path })
-            }
+            ErrorKind::NotFound => MainError::Pn(PnError::NoPkgManifest {
+                file: manifest_path.to_path_buf(),
+            }),
             _ => MainError::from_dyn(err),
         })?
         .pipe(serde_json::de::from_reader::<_, NodeManifest>)
@@ -177,19 +173,28 @@ fn read_package_manifest(manifest_path: &PathBuf) -> Result<NodeManifest, MainEr
 
 #[test]
 fn test_read_package_manifest() {
+    use serde_json::to_string_pretty;
     use std::fs;
     use tempfile::tempdir;
 
     let temp_dir = tempdir().unwrap();
     let package_json_path = temp_dir.path().join("package.json");
     fs::write(
-        package_json_path.clone(),
+        &package_json_path,
         r#"{"scripts": {"test": "echo hello world"}}"#,
     )
     .unwrap();
 
     let package_manifest = read_package_manifest(&package_json_path).unwrap();
-    let test_script = package_manifest.scripts.get("test");
 
-    assert_eq!(test_script, Some(&String::from("echo hello world")));
+    let received = serde_json::to_string_pretty(&package_manifest).unwrap();
+    let expected = serde_json::json!({
+        "scripts": {
+            "test": "echo hello world"
+        }
+    })
+    .pipe_ref(to_string_pretty)
+    .unwrap();
+
+    assert_eq!(received, expected);
 }

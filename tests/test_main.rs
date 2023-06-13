@@ -79,8 +79,13 @@ fn no_package_manifest_error() {
     let output = assertion.get_output();
     let stderr = String::from_utf8_lossy(&output.stderr);
     eprintln!("STDERR:\n{stderr}\n");
-    assert!(stderr.contains("No package.json found in"));
-    let expected_path = temp_dir.path().display().to_string().replace('\\', "\\\\");
+    assert!(stderr.contains("File not found: "));
+    let expected_path = temp_dir
+        .path()
+        .join("package.json")
+        .display()
+        .to_string()
+        .replace('\\', "\\\\");
     assert!(
         stderr.contains(&expected_path),
         "stderr {:?} does not contain expected path {:?}",

@@ -18,6 +18,9 @@ pub enum PnError {
     /// No package manifest.
     #[display(fmt = "File not found: {file:?}")]
     NoPkgManifest { file: PathBuf },
+    /// Parse JSON error.
+    #[display(fmt = "Parse JSON file {file:?} error: {message}")]
+    ParseJSONError { file: PathBuf, message: String },
     /// Other errors.
     #[display(fmt = "{error}")]
     Other { error: Box<dyn Error> },

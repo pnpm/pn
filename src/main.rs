@@ -168,11 +168,16 @@ fn read_package_manifest(manifest_path: &Path) -> Result<NodeManifest, MainError
             _ => MainError::from_dyn(err),
         })?
         .pipe(serde_json::de::from_reader::<_, NodeManifest>)
-        .map_err(MainError::from_dyn)
+        .map_err(|err| {
+            MainError::Pn(PnError::ParseJSONError {
+                file: manifest_path.to_path_buf(),
+                message: err.to_string(),
+            })
+        })
 }
 
 #[test]
-fn test_read_package_manifest() {
+fn test_read_package_manifest_ok() {
     use serde_json::to_string_pretty;
     use std::fs;
     use tempfile::tempdir;
@@ -197,4 +202,33 @@ fn test_read_package_manifest() {
     .unwrap();
 
     assert_eq!(received, expected);
+}
+
+#[test]
+fn test_read_package_manifest_error() {
+    use std::fs;
+    use tempfile::tempdir;
+
+    let temp_dir = tempdir().unwrap();
+    let package_json_path = temp_dir.path().join("package.json");
+    fs::write(
+        &package_json_path,
+        r#"{"scripts": {"test": "echo hello world",}}"#,
+    )
+    .unwrap();
+
+    let read_package_manifest_error_display = format!(
+        "{:?}",
+        read_package_manifest(&package_json_path).unwrap_err()
+    );
+    eprintln!("Read package manifest error:\n{read_package_manifest_error_display}\n");
+
+    let expected_display = format!(
+        "{:?}",
+        MainError::Pn(PnError::ParseJSONError {
+            file: package_json_path,
+            message: String::from("trailing comma at line 1 column 41")
+        })
+    );
+    assert_eq!(read_package_manifest_error_display, expected_display);
 }

@@ -154,14 +154,16 @@ fn pass_to_sub(command: String) -> Result<(), MainError> {
 }
 
 fn create_path_env() -> Result<OsString, MainError> {
-    let existing_paths = env::var_os("PATH");
-    let existing_paths = existing_paths.iter().flat_map(env::split_paths);
-    Path::new("node_modules")
-        .join(".bin")
-        .pipe(std::iter::once)
-        .chain(existing_paths)
-        .pipe(env::join_paths)
-        .map_err(|error| MainError::Pn(PnError::NodeBinPathError { error }))
+    let bin_path = Path::new("node_modules").join(".bin");
+    if let Some(path) = env::var_os("PATH") {
+        bin_path
+            .pipe(std::iter::once)
+            .chain(env::split_paths(&path))
+            .pipe(env::join_paths)
+            .map_err(|error| MainError::Pn(PnError::NodeBinPathError { error }))
+    } else {
+        Ok(OsString::from(bin_path))
+    }
 }
 
 #[test]

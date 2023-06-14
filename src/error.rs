@@ -12,7 +12,6 @@ pub enum PnError {
     ScriptError { name: String, status: NonZeroI32 },
     /// Subprocess finishes but without a status code.
     #[display(fmt = "Command {command:?} has ended unexpectedly")]
-    /// The command terminated unexpectedly.
     UnexpectedTermination { command: String },
     #[display(fmt = "--workspace-root may only be used in a workspace")]
     NotInWorkspace,

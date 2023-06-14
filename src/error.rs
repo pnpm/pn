@@ -13,6 +13,7 @@ pub enum PnError {
     /// Subprocess finishes but without a status code.
     #[display(fmt = "Command {command:?} has ended unexpectedly")]
     UnexpectedTermination { command: String },
+    /// The program receives --workspace-root outside a workspace.
     #[display(fmt = "--workspace-root may only be used in a workspace")]
     NotInWorkspace,
     /// Failed to prepend `node_modules/.bin` to `PATH`.

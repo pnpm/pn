@@ -69,11 +69,7 @@ fn run() -> Result<(), MainError> {
 }
 
 fn run_script(name: &str, command: &str, cwd: &Path) -> Result<(), MainError> {
-    let mut path_env = OsString::from("node_modules/.bin");
-    if let Some(path) = env::var_os("PATH") {
-        path_env.push(":");
-        path_env.push(path);
-    }
+    let path_env = create_path_env()?;
     let status = Command::new("sh")
         .current_dir(cwd)
         .env("PATH", path_env)
@@ -133,11 +129,7 @@ fn pass_to_pnpm(args: &[OsString]) -> Result<(), MainError> {
 }
 
 fn pass_to_sub(command: String) -> Result<(), MainError> {
-    let mut path_env = OsString::from("node_modules/.bin");
-    if let Some(path) = env::var_os("PATH") {
-        path_env.push(":");
-        path_env.push(path);
-    }
+    let path_env = create_path_env()?;
     let status = Command::new("sh")
         .env("PATH", path_env)
         .arg("-c")
@@ -230,4 +222,24 @@ fn test_read_package_manifest_error() {
     let expected_message =
         format!("Parse JSON file {package_json_path:?} error: trailing comma at line 1 column 41",);
     assert_eq!(received_message, expected_message);
+}
+
+fn create_path_env() -> Result<OsString, MainError> {
+    let existing_paths = env::var_os("PATH");
+    let existing_paths = existing_paths.iter().flat_map(env::split_paths);
+    Path::new("node_modules")
+        .join(".bin")
+        .pipe(std::iter::once)
+        .chain(existing_paths)
+        .pipe(env::join_paths)
+        .map_err(|error| MainError::Pn(PnError::NodeBinPathError { error }))
+}
+
+#[test]
+fn test_create_path_env() {
+    let bin_path = Path::new("node_modules").join(".bin");
+    let path_env = create_path_env().expect("prepend 'node_modules/.bin' to PATH");
+
+    let first_path = env::split_paths(&path_env).next();
+    assert_eq!(first_path, Some(bin_path));
 }

@@ -72,7 +72,7 @@ fn run() -> Result<(), MainError> {
 }
 
 fn run_script(name: &str, command: &str, cwd: &Path) -> Result<(), MainError> {
-    let path_env = create_path_env();
+    let path_env = create_path_env()?;
     let status = Command::new("sh")
         .current_dir(cwd)
         .env("PATH", path_env)
@@ -132,7 +132,7 @@ fn pass_to_pnpm(args: &[OsString]) -> Result<(), MainError> {
 }
 
 fn pass_to_sub(command: String) -> Result<(), MainError> {
-    let path_env = create_path_env();
+    let path_env = create_path_env()?;
     let status = Command::new("sh")
         .env("PATH", path_env)
         .arg("-c")
@@ -153,23 +153,23 @@ fn pass_to_sub(command: String) -> Result<(), MainError> {
     })
 }
 
-fn create_path_env() -> OsString {
+fn create_path_env() -> Result<OsString, MainError> {
     let bin_path = Path::new("node_modules").join(".bin");
     if let Some(path) = env::var_os("PATH") {
         bin_path
             .pipe(std::iter::once)
             .chain(env::split_paths(&path))
             .pipe(env::join_paths)
-            .expect("Failed to prepend path") // TODO: propagate JoinPathError to main as a meaningful error message
+            .map_err(|error| MainError::Pn(PnError::NodeBinPathError { error }))
     } else {
-        OsString::from(bin_path)
+        Ok(OsString::from(bin_path))
     }
 }
 
 #[test]
 fn test_create_path_env() {
     let bin_path = Path::new("node_modules").join(".bin");
-    let path_env = create_path_env();
+    let path_env = create_path_env().expect("prepend 'node_modules/.bin' to PATH");
 
     let first_path = env::split_paths(&path_env).next();
     assert_eq!(first_path, Some(bin_path));

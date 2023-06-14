@@ -1,5 +1,5 @@
 use derive_more::Display;
-use std::{error::Error, num::NonZeroI32};
+use std::{env::JoinPathsError, error::Error, num::NonZeroI32};
 
 /// Error types emitted by `pn` itself.
 #[derive(Debug, Display)]
@@ -16,6 +16,9 @@ pub enum PnError {
     UnexpectedTermination { command: String },
     #[display(fmt = "--workspace-root may only be used in a workspace")]
     NotInWorkspace,
+    /// Failed to prepend `node_modules/.bin` to `PATH`.
+    #[display(fmt = "Cannot add `node_modules/.bin` to PATH: {error}")]
+    NodeBinPathError { error: JoinPathsError },
     /// Other errors.
     #[display(fmt = "{error}")]
     Other { error: Box<dyn Error> },

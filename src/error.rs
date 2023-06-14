@@ -27,7 +27,7 @@ pub enum PnError {
 }
 
 /// The main error type.
-#[derive(Debug)]
+#[derive(Debug, Display)]
 pub enum MainError {
     /// Errors emitted by `pn` itself.
     Pn(PnError),

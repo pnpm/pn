@@ -216,18 +216,18 @@ fn test_read_package_manifest_error() {
     )
     .unwrap();
 
-    let read_package_manifest_error_display = format!(
-        "{:?}",
-        read_package_manifest(&package_json_path).unwrap_err()
-    );
-    eprintln!("Read package manifest error:\n{read_package_manifest_error_display}\n");
-
-    let expected_display = format!(
-        "{:?}",
+    let received_error = read_package_manifest(&package_json_path).unwrap_err();
+    assert!(matches!(
+        received_error,
         MainError::Pn(PnError::ParseJsonError {
-            file: package_json_path,
-            message: String::from("trailing comma at line 1 column 41")
+            file: _,
+            message: _
         })
-    );
-    assert_eq!(read_package_manifest_error_display, expected_display);
+    ));
+
+    let received_message = received_error.to_string();
+    eprintln!("Read package manifest error:\n{received_message}\n");
+    let expected_message =
+        format!("Parse JSON file {package_json_path:?} error: trailing comma at line 1 column 41",);
+    assert_eq!(received_message, expected_message);
 }

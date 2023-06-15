@@ -125,3 +125,48 @@ fn node_bin_dir(workspace: &PathBuf) -> PathBuf {
 let a = node_bin_dir(&my_path_buf);
 let b = node_bin_dir(my_path_ref);
 ```
+
+### When or when not to log during tests? What to log? How to log?
+
+The goal is to enable the programmer to quickly inspect the test subject should a test fails.
+
+Logging is almost always necessary when the assertion is not `assert_eq!`. For example: `assert!`, `assert_ne!`, etc.
+
+Logging is sometimes necessary when the assertion is `assert_eq!`.
+
+If the values being compared with `assert_eq!` are simple scalar or single line strings, logging is almost never necessary. It is because `assert_eq!` should already show both values when assertion fails.
+
+If the values being compared with `assert_eq!` may have many lines, they should be logged with `eprintln!` and `{}` format.
+
+If the values being compared with `assert_eq!` have complex structures (such as a struct or an array), they should be logged with `dbg!`.
+
+**Example 1:** Logging before assertion is necessary
+
+```rust
+let message = my_func().unwrap_err().to_string();
+eprintln!("actual message:\n{message}\n");
+assert!(message.contains("expected segment"));
+```
+
+```rust
+let output = execute_my_command();
+let received = output.stdout.to_string_lossy(); // could have multiple lines
+eprintln!("actual stdout:\n{received}\n");
+assert_eq!(received, expected)
+```
+
+```rust
+let hash_map = create_map(my_argument);
+dbg!(&hash_map);
+assert!(hash_map.contains_key("foo"));
+assert!(hash_map.contains_key("bar"));
+```
+
+**Example 2:** Logging is unnecessary
+
+```rust
+let received = add(2, 3);
+assert_eq!(received, 5);
+```
+
+If the assertion fails, the value of `received` will appear alongside the error message.

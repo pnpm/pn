@@ -1,5 +1,5 @@
 use derive_more::Display;
-use std::{env::JoinPathsError, error::Error, num::NonZeroI32};
+use std::{env::JoinPathsError, error::Error, num::NonZeroI32, path::PathBuf};
 
 /// Error types emitted by `pn` itself.
 #[derive(Debug, Display)]
@@ -20,6 +20,14 @@ pub enum PnError {
     #[display(fmt = "--workspace-root may only be used in a workspace")]
     NotInWorkspace,
 
+    /// No package manifest.
+    #[display(fmt = "File not found: {file:?}")]
+    NoPkgManifest { file: PathBuf },
+
+    /// Parse JSON error.
+    #[display(fmt = "Failed to parse {file:?}: {message}")]
+    ParseJsonError { file: PathBuf, message: String },
+
     /// Failed to prepend `node_modules/.bin` to `PATH`.
     #[display(fmt = "Cannot add `node_modules/.bin` to PATH: {error}")]
     NodeBinPathError { error: JoinPathsError },
@@ -30,7 +38,7 @@ pub enum PnError {
 }
 
 /// The main error type.
-#[derive(Debug)]
+#[derive(Debug, Display)]
 pub enum MainError {
     /// Errors emitted by `pn` itself.
     Pn(PnError),

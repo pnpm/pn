@@ -4,12 +4,13 @@ use cli::{Cli, PassedThroughArgs};
 use error::{MainError, PnError};
 use itertools::Itertools;
 use pipe_trait::Pipe;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     env,
     ffi::OsString,
     fs::File,
+    io::ErrorKind,
     num::NonZeroI32,
     path::Path,
     process::{exit, Command, Stdio},
@@ -20,7 +21,7 @@ mod error;
 mod workspace;
 
 /// Structure of `package.json`.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 struct NodeManifest {
     #[serde(default)]
@@ -51,11 +52,7 @@ fn run() -> Result<(), MainError> {
                 cwd = workspace::find_workspace_root(&cwd)?;
             }
             let manifest_path = cwd.join("package.json");
-            let manifest = manifest_path
-                .pipe(File::open)
-                .map_err(MainError::from_dyn)?
-                .pipe(serde_json::de::from_reader::<_, NodeManifest>)
-                .map_err(MainError::from_dyn)?;
+            let manifest = read_package_manifest(&manifest_path)?;
             if let Some(command) = manifest.scripts.get(&args.script) {
                 eprintln!("> {command}");
                 run_script(&args.script, command, &cwd)
@@ -151,6 +148,81 @@ fn pass_to_sub(command: String) -> Result<(), MainError> {
         Some(Some(status)) => MainError::Sub(status),
         None => MainError::Pn(PnError::UnexpectedTermination { command }),
     })
+}
+
+fn read_package_manifest(manifest_path: &Path) -> Result<NodeManifest, MainError> {
+    manifest_path
+        .pipe(File::open)
+        .map_err(|err| match err.kind() {
+            ErrorKind::NotFound => MainError::Pn(PnError::NoPkgManifest {
+                file: manifest_path.to_path_buf(),
+            }),
+            _ => MainError::from_dyn(err),
+        })?
+        .pipe(serde_json::de::from_reader::<_, NodeManifest>)
+        .map_err(|err| {
+            MainError::Pn(PnError::ParseJsonError {
+                file: manifest_path.to_path_buf(),
+                message: err.to_string(),
+            })
+        })
+}
+
+#[test]
+fn test_read_package_manifest_ok() {
+    use std::fs;
+    use tempfile::tempdir;
+
+    let temp_dir = tempdir().unwrap();
+    let package_json_path = temp_dir.path().join("package.json");
+    fs::write(
+        &package_json_path,
+        r#"{"scripts": {"test": "echo hello world"}}"#,
+    )
+    .unwrap();
+
+    let package_manifest = read_package_manifest(&package_json_path).unwrap();
+
+    let received = serde_json::to_string_pretty(&package_manifest).unwrap();
+    let expected = serde_json::json!({
+        "scripts": {
+            "test": "echo hello world"
+        }
+    })
+    .pipe_ref(serde_json::to_string_pretty)
+    .unwrap();
+
+    assert_eq!(received, expected);
+}
+
+#[test]
+fn test_read_package_manifest_error() {
+    use std::fs;
+    use tempfile::tempdir;
+
+    let temp_dir = tempdir().unwrap();
+    let package_json_path = temp_dir.path().join("package.json");
+    fs::write(
+        &package_json_path,
+        r#"{"scripts": {"test": "echo hello world",}}"#,
+    )
+    .unwrap();
+
+    let received_error = read_package_manifest(&package_json_path).unwrap_err();
+    dbg!(&received_error);
+    assert!(matches!(
+        received_error,
+        MainError::Pn(PnError::ParseJsonError {
+            file: _,
+            message: _
+        })
+    ));
+
+    let received_message = received_error.to_string();
+    eprintln!("MESSAGE:\n{received_message}\n");
+    let expected_message =
+        format!("Failed to parse {package_json_path:?}: trailing comma at line 1 column 41",);
+    assert_eq!(received_message, expected_message);
 }
 
 fn create_path_env() -> Result<OsString, MainError> {

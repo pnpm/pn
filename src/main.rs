@@ -228,10 +228,7 @@ mod tests {
         dbg!(&received_error);
         assert!(matches!(
             received_error,
-            MainError::Pn(PnError::ParseJsonError {
-                file: _,
-                message: _
-            })
+            MainError::Pn(PnError::ParseJsonError { .. }),
         ));
 
         let received_message = received_error.to_string();

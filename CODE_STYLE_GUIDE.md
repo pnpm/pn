@@ -118,7 +118,7 @@ The above code is suboptimal because it forces the [copying] of `my_path_ref` on
 Changing the signature of `workspace` to `&Path` would help remove `.to_path_buf()`, eliminating the unnecessary copying:
 
 ```rust
-fn node_bin_dir(workspace: &PathBuf) -> PathBuf {
+fn node_bin_dir(workspace: &Path) -> PathBuf {
     workspace.join("node_modules").join(".bin")
 }
 

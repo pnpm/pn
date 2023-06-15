@@ -219,7 +219,7 @@ fn test_read_package_manifest_error() {
     ));
 
     let received_message = received_error.to_string();
-    eprintln!("Read package manifest error:\n{received_message}\n");
+    eprintln!("MESSAGE:\n{received_message}\n");
     let expected_message =
         format!("Failed to parse {package_json_path:?}: trailing comma at line 1 column 41",);
     assert_eq!(received_message, expected_message);

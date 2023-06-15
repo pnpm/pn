@@ -136,7 +136,7 @@ Logging is sometimes necessary when the assertion is `assert_eq!`.
 
 If the values being compared with `assert_eq!` are simple scalar or single line strings, logging is almost never necessary. It is because `assert_eq!` should already show both values when assertion fails.
 
-If the values being compared with `assert_eq!` may have many lines, they should be logged with `eprintln!` and `{}` format.
+If the values being compared with `assert_eq!` are strings that may have many lines, they should be logged with `eprintln!` and `{}` format.
 
 If the values being compared with `assert_eq!` have complex structures (such as a struct or an array), they should be logged with `dbg!`.
 

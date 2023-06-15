@@ -209,6 +209,7 @@ fn test_read_package_manifest_error() {
     .unwrap();
 
     let received_error = read_package_manifest(&package_json_path).unwrap_err();
+    dbg!(&received_error);
     assert!(matches!(
         received_error,
         MainError::Pn(PnError::ParseJsonError {

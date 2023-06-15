@@ -236,11 +236,17 @@ fn create_path_env() -> Result<OsString, MainError> {
         .map_err(|error| MainError::Pn(PnError::NodeBinPathError { error }))
 }
 
-#[test]
-fn test_create_path_env() {
-    let bin_path = Path::new("node_modules").join(".bin");
-    let path_env = create_path_env().expect("prepend 'node_modules/.bin' to PATH");
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pretty_assertions::assert_eq;
 
-    let first_path = env::split_paths(&path_env).next();
-    assert_eq!(first_path, Some(bin_path));
+    #[test]
+    fn test_create_path_env() {
+        let bin_path = Path::new("node_modules").join(".bin");
+        let path_env = create_path_env().expect("prepend 'node_modules/.bin' to PATH");
+
+        let first_path = env::split_paths(&path_env).next();
+        assert_eq!(first_path, Some(bin_path));
+    }
 }

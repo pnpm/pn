@@ -31,7 +31,7 @@ Has a lifetime, either implicit or explicit.
 The act of cloning or creating an owned data from another owned/borrowed data.
 
 *Examples:*
-* `x.clone()`
+* `owned_data.clone()`
 * `borrowed_data.to_owned()`
 * `OwnedType::from(borrowed_data)`
 * `path.to_path_buf()`

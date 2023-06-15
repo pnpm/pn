@@ -168,63 +168,6 @@ fn read_package_manifest(manifest_path: &Path) -> Result<NodeManifest, MainError
         })
 }
 
-#[test]
-fn test_read_package_manifest_ok() {
-    use std::fs;
-    use tempfile::tempdir;
-
-    let temp_dir = tempdir().unwrap();
-    let package_json_path = temp_dir.path().join("package.json");
-    fs::write(
-        &package_json_path,
-        r#"{"scripts": {"test": "echo hello world"}}"#,
-    )
-    .unwrap();
-
-    let package_manifest = read_package_manifest(&package_json_path).unwrap();
-
-    let received = serde_json::to_string_pretty(&package_manifest).unwrap();
-    let expected = serde_json::json!({
-        "scripts": {
-            "test": "echo hello world"
-        }
-    })
-    .pipe_ref(serde_json::to_string_pretty)
-    .unwrap();
-
-    assert_eq!(received, expected);
-}
-
-#[test]
-fn test_read_package_manifest_error() {
-    use std::fs;
-    use tempfile::tempdir;
-
-    let temp_dir = tempdir().unwrap();
-    let package_json_path = temp_dir.path().join("package.json");
-    fs::write(
-        &package_json_path,
-        r#"{"scripts": {"test": "echo hello world",}}"#,
-    )
-    .unwrap();
-
-    let received_error = read_package_manifest(&package_json_path).unwrap_err();
-    dbg!(&received_error);
-    assert!(matches!(
-        received_error,
-        MainError::Pn(PnError::ParseJsonError {
-            file: _,
-            message: _
-        })
-    ));
-
-    let received_message = received_error.to_string();
-    eprintln!("MESSAGE:\n{received_message}\n");
-    let expected_message =
-        format!("Failed to parse {package_json_path:?}: trailing comma at line 1 column 41",);
-    assert_eq!(received_message, expected_message);
-}
-
 fn create_path_env() -> Result<OsString, MainError> {
     let existing_paths = env::var_os("PATH");
     let existing_paths = existing_paths.iter().flat_map(env::split_paths);
@@ -240,6 +183,60 @@ fn create_path_env() -> Result<OsString, MainError> {
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
+
+    #[test]
+    fn test_read_package_manifest_ok() {
+        use std::fs;
+        use tempfile::tempdir;
+
+        let temp_dir = tempdir().unwrap();
+        let package_json_path = temp_dir.path().join("package.json");
+        fs::write(
+            &package_json_path,
+            r#"{"scripts": {"test": "echo hello world"}}"#,
+        )
+        .unwrap();
+
+        let package_manifest = read_package_manifest(&package_json_path).unwrap();
+
+        let received = serde_json::to_string_pretty(&package_manifest).unwrap();
+        let expected = serde_json::json!({
+            "scripts": {
+                "test": "echo hello world"
+            }
+        })
+        .pipe_ref(serde_json::to_string_pretty)
+        .unwrap();
+
+        assert_eq!(received, expected);
+    }
+
+    #[test]
+    fn test_read_package_manifest_error() {
+        use std::fs;
+        use tempfile::tempdir;
+
+        let temp_dir = tempdir().unwrap();
+        let package_json_path = temp_dir.path().join("package.json");
+        fs::write(
+            &package_json_path,
+            r#"{"scripts": {"test": "echo hello world",}}"#,
+        )
+        .unwrap();
+
+        let received_error = read_package_manifest(&package_json_path).unwrap_err();
+        dbg!(&received_error);
+        assert!(matches!(
+            received_error,
+            MainError::Pn(PnError::ParseJsonError { .. }),
+        ));
+
+        let received_message = received_error.to_string();
+        eprintln!("MESSAGE:\n{received_message}\n");
+        let expected_message =
+            format!("Failed to parse {package_json_path:?}: trailing comma at line 1 column 41",);
+        assert_eq!(received_message, expected_message);
+    }
 
     #[test]
     fn test_create_path_env() {

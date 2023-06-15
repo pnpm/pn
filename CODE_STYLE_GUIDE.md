@@ -51,7 +51,7 @@ Otherwise, use a [borrowed] signature to widen the API surface.
 **Example 1:** Preferring [owned] signature.
 
 ```rust
-fn push_path(mut list: Vec<PathBuf>, item: &Path) {
+fn push_path(list: &mut Vec<PathBuf>, item: &Path) {
     list.push(item.to_path_buf());
 }
 
@@ -64,7 +64,7 @@ The above code is suboptimal because it forces the [copying] of `my_path_buf` ev
 Changing the signature of `item` to `PathBuf` would help remove `.to_path_buf()` inside the `push_back` function, eliminate the cloning of `my_path_buf` (the ownership of `my_path_buf` is transferred to `push_path`).
 
 ```rust
-fn push_path(mut list: Vec<PathBuf>, item: PathBuf) {
+fn push_path(list: &mut Vec<PathBuf>, item: PathBuf) {
     list.push(item);
 }
 

@@ -144,14 +144,14 @@ If the values being compared with `assert_eq!` have complex structures (such as 
 
 ```rust
 let message = my_func().unwrap_err().to_string();
-eprintln!("actual message:\n{message}\n");
+eprintln!("MESSAGE:\n{message}\n");
 assert!(message.contains("expected segment"));
 ```
 
 ```rust
 let output = execute_my_command();
 let received = output.stdout.to_string_lossy(); // could have multiple lines
-eprintln!("actual stdout:\n{received}\n");
+eprintln!("STDOUT:\n{received}\n");
 assert_eq!(received, expected)
 ```
 

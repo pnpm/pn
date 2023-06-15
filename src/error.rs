@@ -25,7 +25,7 @@ pub enum PnError {
     NoPkgManifest { file: PathBuf },
 
     /// Parse JSON error.
-    #[display(fmt = "Parse JSON file {file:?} error: {message}")]
+    #[display(fmt = "Failed to parse {file:?}: {message}")]
     ParseJsonError { file: PathBuf, message: String },
 
     /// Failed to prepend `node_modules/.bin` to `PATH`.

@@ -113,3 +113,16 @@ fn list_script_names() {
         include_str!("fixtures/list-script-names.stdout.txt").trim(),
     );
 }
+
+#[test]
+fn list_no_script_names() {
+    let temp_dir = tempdir().unwrap();
+    fs::write(temp_dir.path().join("package.json"), "{}").unwrap();
+    Command::cargo_bin("pn")
+        .unwrap()
+        .current_dir(&temp_dir)
+        .arg("run")
+        .assert()
+        .success()
+        .stdout("There are no scripts in package.json\n");
+}

@@ -108,10 +108,9 @@ fn list_script_names() {
     let output = assertion.get_output();
     let stdout = String::from_utf8_lossy(&output.stdout);
     eprintln!("STDOUT:\n{stdout}\n");
-    assert_eq!(
-        stdout.trim(),
-        include_str!("fixtures/list-script-names.stdout.txt").trim(),
-    );
+    let expected_stdout =
+        include_str!("fixtures/list-script-names.stdout.txt").replace("\r\n", "\n");
+    assert_eq!(stdout.trim(), expected_stdout.trim(),);
 }
 
 #[test]

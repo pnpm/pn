@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "hello": "echo hello",
+    "world": "echo world",
+    "foo": "echo foo",
+    "bar": "echo bar",
+    "abc": "echo abc",
+    "def": "echo def"
+  }
+}

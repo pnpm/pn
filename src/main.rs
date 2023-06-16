@@ -62,6 +62,9 @@ fn run() -> Result<(), MainError> {
                         .pipe(MainError::Pn)
                         .pipe(Err)
                 }
+            } else if manifest.scripts.is_empty() {
+                println!("There are no scripts in package.json");
+                Ok(())
             } else {
                 println!("Commands available via `pn run`:");
                 for (name, command) in manifest.scripts {

@@ -2,11 +2,11 @@ use ansi_term::Color::{Black, Red};
 use clap::Parser;
 use cli::{Cli, PassedThroughArgs};
 use error::{MainError, PnError};
+use indexmap::IndexMap;
 use itertools::Itertools;
 use pipe_trait::Pipe;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::HashMap,
     env,
     ffi::OsString,
     fs::File,
@@ -25,7 +25,7 @@ mod workspace;
 #[serde(rename_all = "kebab-case")]
 struct NodeManifest {
     #[serde(default)]
-    scripts: HashMap<String, String>,
+    scripts: IndexMap<String, String>,
 }
 
 fn main() {

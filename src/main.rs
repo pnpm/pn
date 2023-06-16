@@ -1,4 +1,3 @@
-use ansi_term::Color::{Black, Red};
 use clap::Parser;
 use cli::{Cli, PassedThroughArgs};
 use error::{MainError, PnError};
@@ -15,6 +14,7 @@ use std::{
     path::Path,
     process::{exit, Command, Stdio},
 };
+use yansi::Color::{Black, Red};
 
 mod cli;
 mod error;
@@ -35,8 +35,8 @@ fn main() {
         Err(MainError::Pn(error)) => {
             eprintln!(
                 "{prefix} {error}",
-                prefix = Black.on(Red).paint("\u{2009}ERROR\u{2009}"),
-                error = Red.paint(error.to_string()),
+                prefix = Black.paint("\u{2009}ERROR\u{2009}").bg(Red),
+                error = Red.paint(error),
             );
             exit(1);
         }

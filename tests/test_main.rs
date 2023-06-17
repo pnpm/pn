@@ -96,7 +96,7 @@ fn list_script_names() {
     let temp_dir = tempdir().unwrap();
     fs::write(
         temp_dir.path().join("package.json"),
-        include_str!("fixtures/list-script-names.package.json"),
+        include_str!("fixtures/list-script-names/package.json"),
     )
     .unwrap();
     let assertion = Command::cargo_bin("pn")
@@ -108,7 +108,7 @@ fn list_script_names() {
     let output = assertion.get_output();
     let received = String::from_utf8_lossy(&output.stdout);
     eprintln!("STDOUT:\n{received}\n");
-    let expected = include_str!("fixtures/list-script-names.stdout.txt").replace("\r\n", "\n");
+    let expected = include_str!("fixtures/list-script-names/stdout.txt").replace("\r\n", "\n");
     assert_eq!(received.trim(), expected.trim());
 }
 

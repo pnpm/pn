@@ -2,6 +2,7 @@ use super::CommandTrait;
 use crate::{
     cli::{create_path_env, Config},
     error::{MainError, PnError},
+    workspace,
 };
 use pipe_trait::Pipe;
 use serde::{Deserialize, Serialize};
@@ -25,8 +26,29 @@ pub struct Run {
 }
 
 impl CommandTrait for Run {
-    fn run(self, _config: Config) -> Result<(), MainError> {
-        Ok(())
+    fn run(self, config: Config) -> Result<(), MainError> {
+        let mut cwd = std::env::current_dir().expect("Couldn't find the current working directory");
+        if config.workspace_root {
+            cwd = workspace::find_workspace_root(&cwd)?;
+        }
+        let manifest_path = cwd.join("package.json");
+        let manifest = read_package_manifest(&manifest_path)?;
+        if let Some(command) = manifest.scripts.get(&self.script) {
+            eprintln!(
+                "\n> {pkg_name}@{pkg_version} {script} {path}",
+                pkg_name = &manifest.name,
+                pkg_version = &manifest.version,
+                script = &self.script,
+                path = cwd.display(),
+            );
+            eprintln!("> {command}\n");
+            return run_script(&self.script, command, &cwd);
+        } else {
+            let e: Result<(), MainError> = PnError::MissingScript { name: self.script }
+                .pipe(MainError::Pn)
+                .pipe(Err);
+            return e;
+        }
     }
 }
 
@@ -36,8 +58,12 @@ impl CommandTrait for Run {
 pub struct NodeManifest {
     #[serde(default)]
     name: String,
+
     #[serde(default)]
     scripts: HashMap<String, String>,
+
+    #[serde(default)]
+    version: String,
 }
 
 fn read_package_manifest(manifest_path: &Path) -> Result<NodeManifest, MainError> {
@@ -102,7 +128,7 @@ mod tests {
         let package_json_path = temp_dir.path().join("package.json");
         fs::write(
             &package_json_path,
-            r#"{"scripts": {"test": "echo hello world"}}"#,
+            r#"{"name": "", "scripts": {"test": "echo hello world"}, "version": ""}"#,
         )
         .unwrap();
 
@@ -110,6 +136,8 @@ mod tests {
 
         let received = serde_json::to_string_pretty(&package_manifest).unwrap();
         let expected = serde_json::json!({
+            "name": "",
+            "version": "",
             "scripts": {
                 "test": "echo hello world"
             }

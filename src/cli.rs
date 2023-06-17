@@ -1,6 +1,6 @@
 use crate::error::PnError;
 use crate::{commands, commands::CommandTrait, error::MainError};
-use clap::{Args, Parser, Subcommand};
+use clap::{Parser, Subcommand};
 use itertools::Itertools;
 use pipe_trait::Pipe;
 use std::{env, ffi::OsString, num::NonZeroI32, path::Path, process, process::Stdio};
@@ -44,17 +44,6 @@ pub enum Command {
     /// Execute a shell command in scope of a project.
     #[clap(external_subcommand)]
     Other(Vec<String>),
-}
-
-/// Runs a defined package script.
-#[derive(Debug, Args)]
-#[clap(rename_all = "kebab-case")]
-pub struct RunArgs {
-    /// Name of the package script to run.
-    pub script: String, // Not OsString because it would be compared against package.json#scripts
-
-    /// Arguments to pass to the package script.
-    pub args: Vec<OsString>,
 }
 
 impl Cli {

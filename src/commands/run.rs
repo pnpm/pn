@@ -9,7 +9,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fs::File;
-use std::io::ErrorKind;
 use std::num::NonZeroI32;
 use std::path::Path;
 use std::{process, process::Stdio};
@@ -31,7 +30,9 @@ impl CommandTrait for Run {
         if config.workspace_root {
             cwd = workspace::find_workspace_root(&cwd)?;
         }
+        dbg!(&cwd);
         let manifest_path = cwd.join("package.json");
+        dbg!(&manifest_path);
         let manifest = read_package_manifest(&manifest_path)?;
         if let Some(command) = manifest.scripts.get(&self.script) {
             eprintln!(
@@ -67,14 +68,13 @@ pub struct NodeManifest {
 }
 
 fn read_package_manifest(manifest_path: &Path) -> Result<NodeManifest, MainError> {
+    if !manifest_path.exists() {
+        return Err(MainError::Pn(PnError::NoPkgManifest { file: manifest_path.to_path_buf() }));
+    }
+
     manifest_path
         .pipe(File::open)
-        .map_err(|err| match err.kind() {
-            ErrorKind::NotFound => MainError::Pn(PnError::NoPkgManifest {
-                file: manifest_path.to_path_buf(),
-            }),
-            _ => MainError::from_dyn(err),
-        })?
+        .map_err(MainError::from_dyn)?
         .pipe(serde_json::de::from_reader::<_, NodeManifest>)
         .map_err(|err| {
             MainError::Pn(PnError::ParseJsonError {

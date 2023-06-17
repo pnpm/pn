@@ -11,14 +11,7 @@ fn main() {
     let cli = Cli::parse();
     if let Err(err) = cli.run() {        
         let status_code = match err {
-            MainError::Sub(status) => {
-                eprintln!(
-                    "{} {}",
-                    Black.on(Red).paint("ELIFECYCLE"),
-                    Red.paint(format!("Command failed with exit code {}", status.get()))
-                );
-                status.get()
-            }
+            MainError::Sub(status) => status.get(),
             MainError::Pn(error) => {
                 eprintln!(
                     "{} {}",

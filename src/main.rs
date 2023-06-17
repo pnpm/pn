@@ -9,7 +9,7 @@ mod workspace;
 
 fn main() {
     let cli = Cli::parse();
-    if let Err(err) = cli.run() {        
+    if let Err(err) = cli.run() {
         let status_code = match err {
             MainError::Sub(status) => status.get(),
             MainError::Pn(error) => {

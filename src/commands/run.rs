@@ -67,7 +67,9 @@ pub struct NodeManifest {
 
 fn read_package_manifest(manifest_path: &Path) -> Result<NodeManifest, MainError> {
     if !manifest_path.exists() {
-        return Err(MainError::Pn(PnError::NoPkgManifest { file: manifest_path.to_path_buf() }));
+        return Err(MainError::Pn(PnError::NoPkgManifest {
+            file: manifest_path.to_path_buf(),
+        }));
     }
 
     manifest_path

@@ -1,5 +1,6 @@
 use assert_cmd::prelude::{CommandCargoExt, OutputAssertExt};
 use build_fs_tree::{dir, file, Build, MergeableFileSystemTree};
+use pretty_assertions::assert_eq;
 use std::{fs, process::Command};
 use tempfile::tempdir;
 
@@ -88,4 +89,38 @@ fn no_package_manifest_error() {
         .replace('\\', "\\\\");
     dbg!(&expected_path);
     assert!(stderr.contains(&expected_path));
+}
+
+#[test]
+fn list_script_names() {
+    let temp_dir = tempdir().unwrap();
+    fs::write(
+        temp_dir.path().join("package.json"),
+        include_str!("fixtures/list-script-names/package.json"),
+    )
+    .unwrap();
+    let assertion = Command::cargo_bin("pn")
+        .unwrap()
+        .current_dir(&temp_dir)
+        .arg("run")
+        .assert()
+        .success();
+    let output = assertion.get_output();
+    let received = String::from_utf8_lossy(&output.stdout);
+    eprintln!("STDOUT:\n{received}\n");
+    let expected = include_str!("fixtures/list-script-names/stdout.txt").replace("\r\n", "\n");
+    assert_eq!(received.trim(), expected.trim());
+}
+
+#[test]
+fn list_no_script_names() {
+    let temp_dir = tempdir().unwrap();
+    fs::write(temp_dir.path().join("package.json"), "{}").unwrap();
+    Command::cargo_bin("pn")
+        .unwrap()
+        .current_dir(&temp_dir)
+        .arg("run")
+        .assert()
+        .success()
+        .stdout("There are no scripts in package.json\n");
 }

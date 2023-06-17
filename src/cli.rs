@@ -42,7 +42,7 @@ pub struct PassedThroughArgs {
 #[clap(rename_all = "kebab-case")]
 pub struct RunArgs {
     /// Name of the package script to run.
-    pub script: String, // Not OsString because it would be compared against package.json#scripts
+    pub script: Option<String>, // Not OsString because it would be compared against package.json#scripts
 
     /// Arguments to pass to the package script.
     pub args: Vec<OsString>,

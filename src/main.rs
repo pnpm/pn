@@ -1,11 +1,11 @@
 use clap::Parser;
 use cli::{Cli, PassedThroughArgs};
 use error::{MainError, PnError};
+use indexmap::IndexMap;
 use itertools::Itertools;
 use pipe_trait::Pipe;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::HashMap,
     env,
     ffi::OsString,
     fs::File,
@@ -25,7 +25,7 @@ mod workspace;
 #[serde(rename_all = "kebab-case")]
 struct NodeManifest {
     #[serde(default)]
-    scripts: HashMap<String, String>,
+    scripts: IndexMap<String, String>,
 }
 
 fn main() {
@@ -53,13 +53,25 @@ fn run() -> Result<(), MainError> {
             }
             let manifest_path = cwd.join("package.json");
             let manifest = read_package_manifest(&manifest_path)?;
-            if let Some(command) = manifest.scripts.get(&args.script) {
-                eprintln!("> {command}");
-                run_script(&args.script, command, &cwd)
+            if let Some(name) = args.script {
+                if let Some(command) = manifest.scripts.get(&name) {
+                    eprintln!("> {command}");
+                    run_script(&name, command, &cwd)
+                } else {
+                    PnError::MissingScript { name }
+                        .pipe(MainError::Pn)
+                        .pipe(Err)
+                }
+            } else if manifest.scripts.is_empty() {
+                println!("There are no scripts in package.json");
+                Ok(())
             } else {
-                PnError::MissingScript { name: args.script }
-                    .pipe(MainError::Pn)
-                    .pipe(Err)
+                println!("Commands available via `pn run`:");
+                for (name, command) in manifest.scripts {
+                    println!("  {name}");
+                    println!("    {command}");
+                }
+                Ok(())
             }
         }
         cli::Command::Install(args) => handle_passed_through("install", args),

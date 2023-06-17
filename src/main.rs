@@ -9,9 +9,7 @@ mod workspace;
 
 fn main() {
     let cli = Cli::parse();
-    if let Err(err) = cli.run() {
-        dbg!(&err);
-        
+    if let Err(err) = cli.run() {        
         let status_code = match err {
             MainError::Sub(status) => {
                 eprintln!(

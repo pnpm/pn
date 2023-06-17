@@ -30,9 +30,7 @@ impl CommandTrait for Run {
         if config.workspace_root {
             cwd = workspace::find_workspace_root(&cwd)?;
         }
-        dbg!(&cwd);
         let manifest_path = cwd.join("package.json");
-        dbg!(&manifest_path);
         let manifest = read_package_manifest(&manifest_path)?;
         if let Some(command) = manifest.scripts.get(&self.script) {
             eprintln!(

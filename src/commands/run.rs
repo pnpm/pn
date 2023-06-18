@@ -1,4 +1,3 @@
-use super::CommandTrait;
 use crate::{
     cli::{create_path_env, GlobalOptions},
     error::{MainError, PnError},
@@ -24,8 +23,8 @@ pub struct Run {
     pub args: Vec<OsString>,
 }
 
-impl CommandTrait for Run {
-    fn run(self, config: GlobalOptions) -> Result<(), MainError> {
+impl Run {
+    pub fn run(self, config: GlobalOptions) -> Result<(), MainError> {
         let mut cwd = std::env::current_dir().expect("Couldn't find the current working directory");
         if config.workspace_root {
             cwd = workspace::find_workspace_root(&cwd)?;

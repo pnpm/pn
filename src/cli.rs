@@ -1,5 +1,5 @@
 use crate::error::PnError;
-use crate::{commands, commands::CommandTrait, error::MainError};
+use crate::{commands, error::MainError};
 use clap::{Parser, Subcommand};
 use itertools::Itertools;
 use pipe_trait::Pipe;

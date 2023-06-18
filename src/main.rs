@@ -207,6 +207,7 @@ fn create_path_env() -> Result<OsString, MainError> {
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
+    use serde_json::json;
 
     #[test]
     fn test_read_package_manifest_ok() {
@@ -223,14 +224,13 @@ mod tests {
 
         let received = read_package_manifest(&package_json_path).unwrap();
 
-        let expected = serde_json::json!({
+        let expected: NodeManifest = json!({
             "scripts": {
                 "test": "echo hello world"
             }
         })
-        .pipe_ref(serde_json::to_string_pretty)
+        .pipe(serde_json::from_value)
         .unwrap();
-        let expected: NodeManifest = serde_json::from_str(expected.as_str()).unwrap();
 
         assert_eq!(received, expected);
     }

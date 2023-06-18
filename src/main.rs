@@ -1,4 +1,4 @@
-use ansi_term::Colour::{Black, Red};
+use yansi::Paint;
 use clap::Parser;
 use cli::Cli;
 use error::MainError;
@@ -15,8 +15,8 @@ fn main() {
             MainError::Pn(error) => {
                 eprintln!(
                     "{} {}",
-                    Black.on(Red).paint("\u{2009}ERROR\u{2009}"),
-                    Red.paint(error.to_string())
+                    Paint::black("\u{2009}ERROR\u{2009}").bg(yansi::Color::Red),
+                    Paint::red(error.to_string())
                 );
                 1
             }

@@ -1,7 +1,7 @@
-use yansi::Paint;
 use clap::Parser;
 use cli::Cli;
 use error::MainError;
+use yansi::Paint;
 mod cli;
 mod commands;
 mod error;

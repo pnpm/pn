@@ -9,7 +9,7 @@ use std::{
     env,
     ffi::OsString,
     fs::File,
-    io::ErrorKind,
+    io::{self, ErrorKind, Write},
     num::NonZeroI32,
     path::Path,
     process::{exit, Command, Stdio},
@@ -78,12 +78,7 @@ fn run() -> Result<(), MainError> {
                 println!("There are no scripts in package.json");
                 Ok(())
             } else {
-                println!("Commands available via `pn run`:");
-                for (name, command) in manifest.scripts {
-                    println!("  {name}");
-                    println!("    {command}");
-                }
-                Ok(())
+                list_scripts(io::stdout(), manifest.scripts).map_err(MainError::from_dyn)
             }
         }
         cli::Command::Install(args) => handle_passed_through("install", args),
@@ -120,6 +115,18 @@ fn run_script(name: &str, command: &str, cwd: &Path) -> Result<(), MainError> {
     }
     .pipe(MainError::Pn)
     .pipe(Err)
+}
+
+fn list_scripts(
+    mut stdout: impl Write,
+    script_map: impl IntoIterator<Item = (String, String)>,
+) -> io::Result<()> {
+    writeln!(stdout, "Commands available via `pn run`:")?;
+    for (name, command) in script_map {
+        writeln!(stdout, "  {name}")?;
+        writeln!(stdout, "    {command}")?;
+    }
+    Ok(())
 }
 
 fn handle_passed_through(command: &str, args: PassedThroughArgs) -> Result<(), MainError> {
@@ -208,6 +215,39 @@ mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
     use serde_json::json;
+
+    #[test]
+    fn test_list_scripts() {
+        let script_map = [
+            ("hello", "echo hello"),
+            ("world", "echo world"),
+            ("foo", "echo foo"),
+            ("bar", "echo bar"),
+            ("abc", "echo abc"),
+            ("def", "echo def"),
+        ]
+        .map(|(k, v)| (k.to_string(), v.to_string()));
+        let mut buf = Vec::<u8>::new();
+        list_scripts(&mut buf, script_map).unwrap();
+        let received = String::from_utf8_lossy(&buf);
+        let expected = [
+            "Commands available via `pn run`:",
+            "  hello",
+            "    echo hello",
+            "  world",
+            "    echo world",
+            "  foo",
+            "    echo foo",
+            "  bar",
+            "    echo bar",
+            "  abc",
+            "    echo abc",
+            "  def",
+            "    echo def",
+        ]
+        .join("\n");
+        assert_eq!(received.trim(), expected.trim());
+    }
 
     #[test]
     fn test_read_package_manifest_script_only_ok() {

@@ -24,10 +24,9 @@ mod workspace;
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 struct NodeManifest {
-    
     #[serde(default)]
     name: String,
-    
+
     #[serde(default)]
     version: String,
 
@@ -62,7 +61,12 @@ fn run() -> Result<(), MainError> {
             let manifest = read_package_manifest(&manifest_path)?;
             if let Some(name) = args.script {
                 if let Some(command) = manifest.scripts.get(&name) {
-                    eprintln!("\n> {}@{} {}", &manifest.name, &manifest.version, &cwd.display());
+                    eprintln!(
+                        "\n> {}@{} {}",
+                        &manifest.name,
+                        &manifest.version,
+                        &cwd.display()
+                    );
                     eprintln!("> {command}\n");
                     run_script(&name, command, &cwd)
                 } else {

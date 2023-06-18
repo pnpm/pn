@@ -21,9 +21,16 @@ mod error;
 mod workspace;
 
 /// Structure of `package.json`.
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 struct NodeManifest {
+    
+    #[serde(default)]
+    name: String,
+    
+    #[serde(default)]
+    version: String,
+
     #[serde(default)]
     scripts: IndexMap<String, String>,
 }
@@ -55,7 +62,8 @@ fn run() -> Result<(), MainError> {
             let manifest = read_package_manifest(&manifest_path)?;
             if let Some(name) = args.script {
                 if let Some(command) = manifest.scripts.get(&name) {
-                    eprintln!("> {command}");
+                    eprintln!("\n> {}@{} {}", &manifest.name, &manifest.version, &cwd.display());
+                    eprintln!("> {command}\n");
                     run_script(&name, command, &cwd)
                 } else {
                     PnError::MissingScript { name }
@@ -209,9 +217,8 @@ mod tests {
         )
         .unwrap();
 
-        let package_manifest = read_package_manifest(&package_json_path).unwrap();
+        let received = read_package_manifest(&package_json_path).unwrap();
 
-        let received = serde_json::to_string_pretty(&package_manifest).unwrap();
         let expected = serde_json::json!({
             "scripts": {
                 "test": "echo hello world"
@@ -219,6 +226,7 @@ mod tests {
         })
         .pipe_ref(serde_json::to_string_pretty)
         .unwrap();
+        let expected: NodeManifest = serde_json::from_str(expected.as_str()).unwrap();
 
         assert_eq!(received, expected);
     }

@@ -1,4 +1,4 @@
-use crate::{cli::Config, error::MainError};
+use crate::{cli::GlobalOptions, error::MainError};
 use clap::Args;
 use std::ffi::OsString;
 
@@ -13,5 +13,5 @@ pub struct PassedThroughArgs {
 
 /// Trait for all subcommands to be implemented
 pub trait CommandTrait: Sized {
-    fn run(self, config: Config) -> Result<(), MainError>;
+    fn run(self, config: GlobalOptions) -> Result<(), MainError>;
 }

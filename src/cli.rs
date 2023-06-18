@@ -9,7 +9,7 @@ use std::{env, ffi::OsString, num::NonZeroI32, path::Path, process, process::Std
 #[clap(author, version, about, rename_all = "kebab-case")]
 pub struct Cli {
     #[clap(flatten)]
-    pub config: Config,
+    pub global_options: GlobalOptions,
 
     /// Command to execute.
     #[clap(subcommand)]
@@ -18,7 +18,7 @@ pub struct Cli {
 
 /// Global configurations to be passed down to subcommands
 #[derive(Parser, Debug)]
-pub struct Config {
+pub struct GlobalOptions {
     /// Run the command on the root workspace project
     #[clap(short, long)]
     pub workspace_root: bool,
@@ -49,7 +49,7 @@ pub enum Command {
 impl Cli {
     pub fn run(self) -> Result<(), MainError> {
         match self.command {
-            Command::Run(e) => e.run(self.config),
+            Command::Run(e) => e.run(self.global_options),
             Command::Install(args) => handle_passed_through("install", args),
             Command::Update(args) => handle_passed_through("update", args),
             Command::Other(args) => pass_to_sub(args.join(" ")),

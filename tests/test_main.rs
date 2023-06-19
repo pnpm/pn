@@ -32,7 +32,7 @@ fn run_script() {
         .stdout("hello world\n")
         .stderr(format!(
             "\n> test@1.0.0 {}\n> echo hello world\n\n",
-            temp_dir.path().pipe(fs::canonicalize).unwrap().display(),
+            temp_dir.path().pipe(dunce::canonicalize).unwrap().display(),
         ));
 }
 
@@ -59,7 +59,7 @@ fn run_from_workspace_root() {
         .stdout("hello from workspace root\n")
         .stderr(format!(
             "\n> @ {}\n> echo hello from workspace root\n\n",
-            temp_dir.path().pipe(fs::canonicalize).unwrap().display(),
+            temp_dir.path().pipe(dunce::canonicalize).unwrap().display(),
         ));
 }
 

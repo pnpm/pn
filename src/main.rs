@@ -65,7 +65,7 @@ fn run() -> Result<(), MainError> {
                         "\n> {name}@{version} {cwd}",
                         name = &manifest.name,
                         version = &manifest.version,
-                        cwd = &cwd.display(),
+                        cwd = cwd.display(),
                     );
                     eprintln!("> {command}\n");
                     run_script(&name, command, &cwd)

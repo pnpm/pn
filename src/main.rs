@@ -62,10 +62,10 @@ fn run() -> Result<(), MainError> {
             if let Some(name) = args.script {
                 if let Some(command) = manifest.scripts.get(&name) {
                     eprintln!(
-                        "\n> {}@{} {}",
-                        &manifest.name,
-                        &manifest.version,
-                        &cwd.display()
+                        "\n> {name}@{version} {cwd}",
+                        name = &manifest.name,
+                        version = &manifest.version,
+                        cwd = &cwd.display(),
                     );
                     eprintln!("> {command}\n");
                     run_script(&name, command, &cwd)

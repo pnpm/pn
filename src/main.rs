@@ -310,5 +310,4 @@ mod tests {
         let first_path = env::split_paths(&path_env).next();
         assert_eq!(first_path, Some(bin_path));
     }
-
 }

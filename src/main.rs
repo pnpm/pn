@@ -65,7 +65,9 @@ fn run() -> Result<(), MainError> {
                         "\n> {name}@{version} {cwd}",
                         name = &manifest.name,
                         version = &manifest.version,
-                        cwd = cwd.display(),
+                        cwd = dunce::canonicalize(&cwd)
+                            .unwrap_or_else(|_| cwd.clone())
+                            .display(),
                     );
                     eprintln!("> {command}\n");
                     run_script(&name, command, &cwd)

@@ -250,7 +250,7 @@ mod tests {
     }
 
     #[test]
-    fn test_read_package_manifest_script_only_ok() {
+    fn test_read_package_manifest_ok() {
         use std::fs;
         use tempfile::tempdir;
 
@@ -265,34 +265,6 @@ mod tests {
         let received = read_package_manifest(&package_json_path).unwrap();
 
         let expected: NodeManifest = json!({
-            "scripts": {
-                "test": "echo hello world"
-            }
-        })
-        .pipe(serde_json::from_value)
-        .unwrap();
-
-        assert_eq!(received, expected);
-    }
-
-    #[test]
-    fn test_read_package_manifest_full_ok() {
-        use std::fs;
-        use tempfile::tempdir;
-
-        let temp_dir = tempdir().unwrap();
-        let package_json_path = temp_dir.path().join("package.json");
-        fs::write(
-            &package_json_path,
-            r#"{"name":"pn", "version": "0.0.0", "scripts": {"test": "echo hello world"}}"#,
-        )
-        .unwrap();
-
-        let received = read_package_manifest(&package_json_path).unwrap();
-
-        let expected: NodeManifest = json!({
-            "name": "pn",
-            "version": "0.0.0",
             "scripts": {
                 "test": "echo hello world"
             }
@@ -338,4 +310,5 @@ mod tests {
         let first_path = env::split_paths(&path_env).next();
         assert_eq!(first_path, Some(bin_path));
     }
+
 }

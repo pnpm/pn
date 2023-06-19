@@ -21,9 +21,15 @@ mod error;
 mod workspace;
 
 /// Structure of `package.json`.
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 struct NodeManifest {
+    #[serde(default)]
+    name: String,
+
+    #[serde(default)]
+    version: String,
+
     #[serde(default)]
     scripts: IndexMap<String, String>,
 }
@@ -55,7 +61,15 @@ fn run() -> Result<(), MainError> {
             let manifest = read_package_manifest(&manifest_path)?;
             if let Some(name) = args.script {
                 if let Some(command) = manifest.scripts.get(&name) {
-                    eprintln!("> {command}");
+                    eprintln!(
+                        "\n> {name}@{version} {cwd}",
+                        name = &manifest.name,
+                        version = &manifest.version,
+                        cwd = dunce::canonicalize(&cwd)
+                            .unwrap_or_else(|_| cwd.clone())
+                            .display(),
+                    );
+                    eprintln!("> {command}\n");
                     run_script(&name, command, &cwd)
                 } else {
                     PnError::MissingScript { name }
@@ -202,6 +216,7 @@ fn create_path_env() -> Result<OsString, MainError> {
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
+    use serde_json::json;
 
     #[test]
     fn test_list_scripts() {
@@ -249,15 +264,14 @@ mod tests {
         )
         .unwrap();
 
-        let package_manifest = read_package_manifest(&package_json_path).unwrap();
+        let received = read_package_manifest(&package_json_path).unwrap();
 
-        let received = serde_json::to_string_pretty(&package_manifest).unwrap();
-        let expected = serde_json::json!({
+        let expected: NodeManifest = json!({
             "scripts": {
                 "test": "echo hello world"
             }
         })
-        .pipe_ref(serde_json::to_string_pretty)
+        .pipe(serde_json::from_value)
         .unwrap();
 
         assert_eq!(received, expected);

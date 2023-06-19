@@ -1,6 +1,8 @@
 use assert_cmd::prelude::{CommandCargoExt, OutputAssertExt};
 use build_fs_tree::{dir, file, Build, MergeableFileSystemTree};
+use pipe_trait::Pipe;
 use pretty_assertions::assert_eq;
+use serde_json::json;
 use std::{fs, process::Command};
 use tempfile::tempdir;
 
@@ -10,7 +12,14 @@ fn run_script() {
     let package_json_path = temp_dir.path().join("package.json");
     fs::write(
         package_json_path,
-        r#"{"scripts": {"test": "echo hello world"}}"#,
+        json!({
+            "name": "test",
+            "version": "1.0.0",
+            "scripts": {
+                "test": "echo hello world"
+            }
+        })
+        .to_string(),
     )
     .unwrap();
 
@@ -20,7 +29,11 @@ fn run_script() {
         .args(["run", "test"])
         .assert()
         .success()
-        .stdout("hello world\n");
+        .stdout("hello world\n")
+        .stderr(format!(
+            "\n> test@1.0.0 {}\n> echo hello world\n\n",
+            temp_dir.path().pipe(dunce::canonicalize).unwrap().display(),
+        ));
 }
 
 #[test]
@@ -43,7 +56,11 @@ fn run_from_workspace_root() {
         .args(["--workspace-root", "run", "test"])
         .assert()
         .success()
-        .stdout("hello from workspace root\n");
+        .stdout("hello from workspace root\n")
+        .stderr(format!(
+            "\n> @ {}\n> echo hello from workspace root\n\n",
+            temp_dir.path().pipe(dunce::canonicalize).unwrap().display(),
+        ));
 }
 
 #[test]

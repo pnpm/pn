@@ -10,7 +10,7 @@ fn run_script() {
     let package_json_path = temp_dir.path().join("package.json");
     fs::write(
         package_json_path,
-        r#"{"scripts": {"test": "echo hello world"}}"#,
+        r#"{"name": "pn", "version": "0.0.0", "scripts": {"test": "echo hello world"}}"#,
     )
     .unwrap();
 
@@ -20,7 +20,11 @@ fn run_script() {
         .args(["run", "test"])
         .assert()
         .success()
-        .stdout("hello world\n");
+        .stdout("hello world\n")
+        .stderr(format!(
+            "\n> pn@0.0.0 {}\n> echo hello world\n\n",
+            &temp_dir.path().display()
+        ));
 }
 
 #[test]
@@ -43,7 +47,11 @@ fn run_from_workspace_root() {
         .args(["--workspace-root", "run", "test"])
         .assert()
         .success()
-        .stdout("hello from workspace root\n");
+        .stdout("hello from workspace root\n")
+        .stderr(format!(
+            "\n> @ {}\n> echo hello from workspace root\n\n",
+            &temp_dir.path().display()
+        ));
 }
 
 #[test]

@@ -1,6 +1,7 @@
 use assert_cmd::prelude::{CommandCargoExt, OutputAssertExt};
 use build_fs_tree::{dir, file, Build, MergeableFileSystemTree};
 use pretty_assertions::assert_eq;
+use serde_json::json;
 use std::{fs, process::Command};
 use tempfile::tempdir;
 
@@ -10,7 +11,14 @@ fn run_script() {
     let package_json_path = temp_dir.path().join("package.json");
     fs::write(
         package_json_path,
-        r#"{"name": "pn", "version": "0.0.0", "scripts": {"test": "echo hello world"}}"#,
+        json!({
+            "name": "test",
+            "version": "1.0.0",
+            "scripts": {
+                "test": "echo hello world"
+            }
+        })
+        .to_string(),
     )
     .unwrap();
 
@@ -22,7 +30,7 @@ fn run_script() {
         .success()
         .stdout("hello world\n")
         .stderr(format!(
-            "\n> pn@0.0.0 {}\n> echo hello world\n\n",
+            "\n> test@1.0.0 {}\n> echo hello world\n\n",
             &temp_dir.path().display(),
         ));
 }

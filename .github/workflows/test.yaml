@@ -25,7 +25,7 @@ jobs:
         uses: actions/cache@v2.1.5
         timeout-minutes: 1
         continue-on-error: true
-        if: matrix.os != 'macos-latest' # Cache causes errors on macOS
+        if: matrix.os == 'ubuntu-latest' # Cache causes errors on macOS and Windows
         with:
           path: |
             ~/.cargo/registry

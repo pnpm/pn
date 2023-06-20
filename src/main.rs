@@ -17,6 +17,7 @@ use std::{
 use yansi::Color::{Black, Red};
 
 mod cli;
+mod effect;
 mod error;
 mod workspace;
 

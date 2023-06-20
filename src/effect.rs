@@ -27,12 +27,6 @@ pub struct MockEffect {
     pub stdout: Vec<u8>,
 }
 
-impl MockEffect {
-    pub fn new() -> Self {
-        Default::default()
-    }
-}
-
 impl Effect for MockEffect {
     type Command = MockCommand;
     type Stdout = Vec<u8>;

@@ -1,13 +1,15 @@
 use std::{ffi::OsStr, io, path::Path, process};
 
 #[cfg(test)]
+use super::MockChild;
+#[cfg(test)]
 use mockall::automock;
 
 #[cfg_attr(test, automock(
     type StdIn = ();
     type StdOut = ();
     type StdErr = ();
-    type Child = ();
+    type Child = MockChild;
     type Error = ();
 ))]
 pub trait Command {

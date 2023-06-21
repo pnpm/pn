@@ -3,10 +3,14 @@ use std::{
     process,
 };
 
+mod child;
 mod command;
 
+pub use child::Child;
 pub use command::Command;
 
+#[cfg(test)]
+pub use child::MockChild;
 #[cfg(test)]
 pub use command::MockCommand;
 

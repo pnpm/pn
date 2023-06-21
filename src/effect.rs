@@ -5,7 +5,10 @@ use std::{
 
 mod command;
 
-pub use command::{Command, MockCommand};
+pub use command::Command;
+
+#[cfg(test)]
+pub use command::MockCommand;
 
 pub trait Effect {
     type Command: Command;
@@ -25,9 +28,11 @@ impl Effect for MainEffect {
     }
 }
 
+#[cfg(test)]
 #[derive(Debug, Default)]
 pub struct MockEffect;
 
+#[cfg(test)]
 impl Effect for MockEffect {
     type Command = MockCommand;
     type Stdout = Vec<u8>;

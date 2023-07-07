@@ -53,8 +53,8 @@ pub enum PnError {
     ParseJsonError { file: PathBuf, message: String },
 
     /// Failed to prepend `node_modules/.bin` to `PATH`.
-    #[display(fmt = "Cannot add `node_modules/.bin` to PATH: {error}")]
-    NodeBinPathError { error: JoinPathsError },
+    #[display(fmt = "Cannot add `node_modules/.bin` to PATH: {_0}")]
+    NodeBinPathError(JoinPathsError),
 }
 
 /// The main error type.

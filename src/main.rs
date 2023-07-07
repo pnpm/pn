@@ -214,7 +214,8 @@ fn create_path_env() -> Result<OsString, MainError> {
         .pipe(std::iter::once)
         .chain(existing_paths)
         .pipe(env::join_paths)
-        .map_err(|error| MainError::Pn(PnError::NodeBinPathError { error }))
+        .map_err(PnError::NodeBinPathError)
+        .map_err(MainError::from)
 }
 
 #[cfg(test)]

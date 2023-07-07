@@ -10,7 +10,11 @@ pub fn find_workspace_root(cwd: &Path) -> Result<PathBuf, MainError> {
         cwd,
     };
     find_up_with(WORKSPACE_MANIFEST_FILENAME, options)
-        .map_err(MainError::from_dyn)?
+        .map_err(|error| PnError::FindUpError {
+            start_dir: cwd.to_path_buf(),
+            file_name: WORKSPACE_MANIFEST_FILENAME,
+            error,
+        })?
         .and_then(|x| x.parent().map(Path::to_path_buf))
         .ok_or(MainError::Pn(PnError::NotInWorkspace))
 }

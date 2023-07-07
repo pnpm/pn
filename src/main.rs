@@ -80,7 +80,9 @@ fn run() -> Result<(), MainError> {
                 println!("There are no scripts in package.json");
                 Ok(())
             } else {
-                list_scripts(io::stdout(), manifest.scripts).map_err(MainError::from_dyn)
+                list_scripts(io::stdout(), manifest.scripts)
+                    .map_err(PnError::WriteStdoutError)
+                    .map_err(MainError::from)
             }
         }
         cli::Command::Install(args) => handle_passed_through("install", args),
@@ -100,9 +102,9 @@ fn run_script(name: &str, command: &str, cwd: &Path) -> Result<(), MainError> {
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .spawn()
-        .map_err(MainError::from_dyn)?
+        .map_err(PnError::SpawnProcessError)?
         .wait()
-        .map_err(MainError::from_dyn)?
+        .map_err(PnError::WaitProcessError)?
         .code()
         .map(NonZeroI32::new);
     match status {
@@ -144,9 +146,9 @@ fn pass_to_pnpm(args: &[OsString]) -> Result<(), MainError> {
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .spawn()
-        .map_err(MainError::from_dyn)?
+        .map_err(PnError::SpawnProcessError)?
         .wait()
-        .map_err(MainError::from_dyn)?
+        .map_err(PnError::WaitProcessError)?
         .code()
         .map(NonZeroI32::new);
     Err(match status {
@@ -171,9 +173,9 @@ fn pass_to_sub(command: String) -> Result<(), MainError> {
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .spawn()
-        .map_err(MainError::from_dyn)?
+        .map_err(PnError::SpawnProcessError)?
         .wait()
-        .map_err(MainError::from_dyn)?
+        .map_err(PnError::WaitProcessError)?
         .code()
         .map(NonZeroI32::new);
     Err(match status {
@@ -186,11 +188,14 @@ fn pass_to_sub(command: String) -> Result<(), MainError> {
 fn read_package_manifest(manifest_path: &Path) -> Result<NodeManifest, MainError> {
     manifest_path
         .pipe(File::open)
-        .map_err(|err| match err.kind() {
-            ErrorKind::NotFound => MainError::Pn(PnError::NoPkgManifest {
+        .map_err(|error| match error.kind() {
+            ErrorKind::NotFound => PnError::NoPkgManifest {
                 file: manifest_path.to_path_buf(),
-            }),
-            _ => MainError::from_dyn(err),
+            },
+            _ => PnError::FsError {
+                path: manifest_path.to_path_buf(),
+                error,
+            },
         })?
         .pipe(serde_json::de::from_reader::<_, NodeManifest>)
         .map_err(|err| {

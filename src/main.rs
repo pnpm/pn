@@ -104,10 +104,10 @@ fn run() -> Result<(), MainError> {
                             .display(),
                     );
                     eprintln!("> {command}\n");
-                    return run_script(&name, command, &cwd);
+                    return run_script(name, command, &cwd);
                 }
             }
-            return pass_to_sub(args.join(" "));
+            pass_to_sub(args.join(" "))
         }
     }
 }

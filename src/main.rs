@@ -85,7 +85,30 @@ fn run() -> Result<(), MainError> {
         }
         cli::Command::Install(args) => handle_passed_through("install", args),
         cli::Command::Update(args) => handle_passed_through("update", args),
-        cli::Command::Other(args) => pass_to_sub(args.join(" ")),
+        cli::Command::Other(args) => {
+            let mut cwd = env::current_dir().expect("Couldn't find the current working directory");
+            if cli.workspace_root {
+                cwd = workspace::find_workspace_root(&cwd)?;
+            }
+            let manifest_path = cwd.join("package.json");
+            let manifest = read_package_manifest(&manifest_path)?;
+            // Check if a script with the name exists. If it does, we run it.
+            if let Some(name) = args.first() {
+                if let Some(command) = manifest.scripts.get(name) {
+                    eprintln!(
+                        "\n> {name}@{version} {cwd}",
+                        name = &manifest.name,
+                        version = &manifest.version,
+                        cwd = dunce::canonicalize(&cwd)
+                            .unwrap_or_else(|_| cwd.clone())
+                            .display(),
+                    );
+                    eprintln!("> {command}\n");
+                    return run_script(&name, command, &cwd);
+                }
+            }
+            return pass_to_sub(args.join(" "));
+        }
     }
 }
 

@@ -73,6 +73,8 @@ fn run() -> Result<(), MainError> {
         run_script(name, command, cwd)
     };
     match cli.command {
+        cli::Command::Install(args) => handle_passed_through("install", args),
+        cli::Command::Update(args) => handle_passed_through("update", args),
         cli::Command::Run(args) => {
             let (cwd, manifest) = cwd_and_manifest()?;
             if let Some(name) = args.script {
@@ -90,8 +92,6 @@ fn run() -> Result<(), MainError> {
                 list_scripts(io::stdout(), manifest.scripts).map_err(MainError::from_dyn)
             }
         }
-        cli::Command::Install(args) => handle_passed_through("install", args),
-        cli::Command::Update(args) => handle_passed_through("update", args),
         cli::Command::Other(args) => {
             let (cwd, manifest) = cwd_and_manifest()?;
             // Check if a script with the name exists. If it does, we run it.

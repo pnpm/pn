@@ -3,8 +3,7 @@ use strum::{Display as StrumDisplay, EnumString};
 
 /// An enum of commands that need to be passed to pnpm
 #[derive(Debug, PartialEq, EnumString, StrumDisplay, Subcommand)]
-#[strum(ascii_case_insensitive)]
-#[strum(serialize_all = "kebab-case")]
+#[strum(use_phf, serialize_all = "kebab-case")]
 pub enum PnpmCommands {
     // commands that pnpm passes to npm
     Access,

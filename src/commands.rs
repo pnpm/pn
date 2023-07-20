@@ -47,9 +47,7 @@ pub enum PnpmCommands {
 
     // manage deps
     Add,
-    /// Installs all dependencies of the project in the current working directory.
-    /// When executed inside a workspace, installs all dependencies of all projects.
-    #[strum(serialize = "i")] // aliases
+    I,
     Install,
     /// Updates packages to their latest version based on the specified range.
     /// You can use "*" in package name to update all packages with the same pattern.

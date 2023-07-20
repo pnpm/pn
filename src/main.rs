@@ -75,8 +75,9 @@ fn run() -> Result<(), MainError> {
         run_script(name, command, cwd)
     };
     match cli.command {
-        cli::Command::Install(args) => handle_passed_through("install", args),
-        cli::Command::Update(args) => handle_passed_through("update", args),
+        cli::Command::PnpmCommands(c) => {
+            handle_passed_through(format!("{c}").as_str(), PassedThroughArgs::default())
+        }
         cli::Command::Run(args) => {
             let (cwd, manifest) = cwd_and_manifest()?;
             if let Some(name) = args.script {

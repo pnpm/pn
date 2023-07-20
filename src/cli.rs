@@ -43,11 +43,10 @@ impl std::default::Default for PassedThroughArgs {
         os_args.next(); // skip the bin name
         os_args.next(); // skip the command name
         Self {
-            args: os_args.collect()
+            args: os_args.collect(),
         }
     }
 }
-
 
 /// Runs a defined package script.
 #[derive(Debug, Args)]

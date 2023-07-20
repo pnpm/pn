@@ -1,5 +1,5 @@
-use strum::{Display as StrumDisplay, EnumString};
 use clap::Subcommand;
+use strum::{Display as StrumDisplay, EnumString};
 
 /// An enum of commands that need to be passed to pnpm
 #[derive(Debug, PartialEq, EnumString, StrumDisplay, Subcommand)]

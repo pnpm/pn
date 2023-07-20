@@ -99,10 +99,6 @@ fn run() -> Result<(), MainError> {
             let (cwd, manifest) = cwd_and_manifest()?;
             // Check if a script with the name exists. If it does, we run it.
             if let Some(name) = args.first() {
-                use std::str::FromStr;
-                let c = PnpmCommands::from_str(name);
-                println!("{:?}", c);
-                println!("{}", c.unwrap());
                 if let Some(command) = manifest.scripts.get(name) {
                     return print_and_run_script(&manifest, name, command, &cwd);
                 }

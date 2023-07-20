@@ -1,6 +1,5 @@
 use clap::Parser;
 use cli::{Cli, PassedThroughArgs};
-use commands::PnpmCommands;
 use error::{MainError, PnError};
 use indexmap::IndexMap;
 use itertools::Itertools;

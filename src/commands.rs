@@ -49,9 +49,7 @@ pub enum PnpmCommands {
     Add,
     I,
     Install,
-    /// Updates packages to their latest version based on the specified range.
-    /// You can use "*" in package name to update all packages with the same pattern.
-    #[strum(serialize = "up")] // aliases
+    Up,
     Update,
     Remove,
     Link,

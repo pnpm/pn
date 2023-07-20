@@ -1,6 +1,8 @@
 use clap::*;
 use std::ffi::OsString;
 
+use crate::commands::PnpmCommands;
+
 #[derive(Debug, Parser)]
 #[clap(author, version, about, rename_all = "kebab-case")]
 pub struct Cli {
@@ -18,14 +20,8 @@ pub enum Command {
     /// Runs a defined package script.
     #[clap(alias = "run-script")]
     Run(RunArgs),
-    /// Installs all dependencies of the project in the current working directory.
-    /// When executed inside a workspace, installs all dependencies of all projects.
-    #[clap(alias = "i")]
-    Install(PassedThroughArgs),
-    /// Updates packages to their latest version based on the specified range.
-    /// You can use "*" in package name to update all packages with the same pattern.
-    #[clap(alias = "up")]
-    Update(PassedThroughArgs),
+    #[clap(flatten)]
+    PnpmCommands(PnpmCommands),
     /// Execute a shell command in scope of a project.
     #[clap(external_subcommand)]
     Other(Vec<String>),
@@ -36,6 +32,22 @@ pub enum Command {
 pub struct PassedThroughArgs {
     pub args: Vec<OsString>,
 }
+
+// Generate passed thro args from `env::args_os()`. `PnpmCommand` can be formatted to string
+// to get the command name, so all we need is the remaining args. This is better than maintaining
+// a `PassedThroughArgs` struct for all variants of `PnpmCommand` and also wouldnt bloat the
+// size of the enum
+impl std::default::Default for PassedThroughArgs {
+    fn default() -> Self {
+        let mut os_args = std::env::args_os();
+        os_args.next(); // skip the bin name
+        os_args.next(); // skip the command name
+        Self {
+            args: os_args.collect()
+        }
+    }
+}
+
 
 /// Runs a defined package script.
 #[derive(Debug, Args)]

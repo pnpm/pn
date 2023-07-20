@@ -47,8 +47,8 @@ pub enum PnpmCommands {
 
     // manage deps
     Add,
-    Install,
-    Update,
+    // Install,
+    // Update,
     Remove,
     Link,
     Unlink,

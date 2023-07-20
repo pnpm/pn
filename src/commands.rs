@@ -1,7 +1,8 @@
 use strum::{Display as StrumDisplay, EnumString};
+use clap::Subcommand;
 
 /// An enum of commands that need to be passed to pnpm
-#[derive(Debug, PartialEq, EnumString, StrumDisplay)]
+#[derive(Debug, PartialEq, EnumString, StrumDisplay, Subcommand)]
 #[strum(ascii_case_insensitive)]
 #[strum(serialize_all = "kebab-case")]
 pub enum PnpmCommands {
@@ -47,8 +48,14 @@ pub enum PnpmCommands {
 
     // manage deps
     Add,
-    // Install,
-    // Update,
+    /// Installs all dependencies of the project in the current working directory.
+    /// When executed inside a workspace, installs all dependencies of all projects.
+    #[strum(serialize = "i")] // aliases
+    Install,
+    /// Updates packages to their latest version based on the specified range.
+    /// You can use "*" in package name to update all packages with the same pattern.
+    #[strum(serialize = "up")] // aliases
+    Update,
     Remove,
     Link,
     Unlink,

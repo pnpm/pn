@@ -51,6 +51,15 @@ fn main() {
 
 fn run() -> Result<(), MainError> {
     let cli = Cli::parse();
+    let cwd_and_manifest = || -> Result<_, MainError> {
+        let mut cwd = env::current_dir().expect("Couldn't find the current working directory");
+        if cli.workspace_root {
+            cwd = workspace::find_workspace_root(&cwd)?;
+        }
+        let manifest_path = cwd.join("package.json");
+        let manifest = read_package_manifest(&manifest_path)?;
+        Ok((cwd, manifest))
+    };
     let print_and_run_script = |manifest: &NodeManifest, name: &str, command: &str, cwd: &Path| {
         eprintln!(
             "\n> {name}@{version} {cwd}",
@@ -65,12 +74,7 @@ fn run() -> Result<(), MainError> {
     };
     match cli.command {
         cli::Command::Run(args) => {
-            let mut cwd = env::current_dir().expect("Couldn't find the current working directory");
-            if cli.workspace_root {
-                cwd = workspace::find_workspace_root(&cwd)?;
-            }
-            let manifest_path = cwd.join("package.json");
-            let manifest = read_package_manifest(&manifest_path)?;
+            let (cwd, manifest) = cwd_and_manifest()?;
             if let Some(name) = args.script {
                 if let Some(command) = manifest.scripts.get(&name) {
                     print_and_run_script(&manifest, &name, command, &cwd)
@@ -89,12 +93,7 @@ fn run() -> Result<(), MainError> {
         cli::Command::Install(args) => handle_passed_through("install", args),
         cli::Command::Update(args) => handle_passed_through("update", args),
         cli::Command::Other(args) => {
-            let mut cwd = env::current_dir().expect("Couldn't find the current working directory");
-            if cli.workspace_root {
-                cwd = workspace::find_workspace_root(&cwd)?;
-            }
-            let manifest_path = cwd.join("package.json");
-            let manifest = read_package_manifest(&manifest_path)?;
+            let (cwd, manifest) = cwd_and_manifest()?;
             // Check if a script with the name exists. If it does, we run it.
             if let Some(name) = args.first() {
                 if let Some(command) = manifest.scripts.get(name) {

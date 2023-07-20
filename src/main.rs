@@ -51,6 +51,18 @@ fn main() {
 
 fn run() -> Result<(), MainError> {
     let cli = Cli::parse();
+    let print_and_run_script = |manifest: &NodeManifest, name: &str, command: &str, cwd: &Path| {
+        eprintln!(
+            "\n> {name}@{version} {cwd}",
+            name = &manifest.name,
+            version = &manifest.version,
+            cwd = dunce::canonicalize(cwd)
+                .unwrap_or_else(|_| cwd.to_path_buf())
+                .display(),
+        );
+        eprintln!("> {command}\n");
+        run_script(name, command, cwd)
+    };
     match cli.command {
         cli::Command::Run(args) => {
             let mut cwd = env::current_dir().expect("Couldn't find the current working directory");
@@ -61,16 +73,7 @@ fn run() -> Result<(), MainError> {
             let manifest = read_package_manifest(&manifest_path)?;
             if let Some(name) = args.script {
                 if let Some(command) = manifest.scripts.get(&name) {
-                    eprintln!(
-                        "\n> {name}@{version} {cwd}",
-                        name = &manifest.name,
-                        version = &manifest.version,
-                        cwd = dunce::canonicalize(&cwd)
-                            .unwrap_or_else(|_| cwd.clone())
-                            .display(),
-                    );
-                    eprintln!("> {command}\n");
-                    run_script(&name, command, &cwd)
+                    print_and_run_script(&manifest, &name, command, &cwd)
                 } else {
                     PnError::MissingScript { name }
                         .pipe(MainError::Pn)
@@ -95,16 +98,7 @@ fn run() -> Result<(), MainError> {
             // Check if a script with the name exists. If it does, we run it.
             if let Some(name) = args.first() {
                 if let Some(command) = manifest.scripts.get(name) {
-                    eprintln!(
-                        "\n> {name}@{version} {cwd}",
-                        name = &manifest.name,
-                        version = &manifest.version,
-                        cwd = dunce::canonicalize(&cwd)
-                            .unwrap_or_else(|_| cwd.clone())
-                            .display(),
-                    );
-                    eprintln!("> {command}\n");
-                    return run_script(name, command, &cwd);
+                    return print_and_run_script(&manifest, name, command, &cwd);
                 }
             }
             pass_to_sub(args.join(" "))

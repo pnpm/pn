@@ -1,10 +1,9 @@
-use clap::Subcommand;
-use strum::{Display as StrumDisplay, EnumString};
+use strum::EnumString;
 
 /// An enum of commands that need to be passed to pnpm
-#[derive(Debug, PartialEq, EnumString, StrumDisplay, Subcommand, Clone)]
+#[derive(Debug, Clone, EnumString)]
 #[strum(use_phf, serialize_all = "kebab-case")]
-pub enum PnpmCommands {
+pub enum PassedThroughCommand {
     // commands that pnpm passes to npm
     Access,
     Adduser,

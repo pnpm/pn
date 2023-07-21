@@ -1,5 +1,5 @@
 use clap::Parser;
-use cli::{Cli, PassedThroughArgs};
+use cli::Cli;
 use error::{MainError, PnError};
 use indexmap::IndexMap;
 use itertools::Itertools;
@@ -17,8 +17,8 @@ use std::{
 use yansi::Color::{Black, Red};
 
 mod cli;
-mod commands;
 mod error;
+mod passed_through;
 mod workspace;
 
 /// Structure of `package.json`.
@@ -74,9 +74,6 @@ fn run() -> Result<(), MainError> {
         run_script(name, command, cwd)
     };
     match cli.command {
-        cli::Command::PnpmCommands(c) => {
-            handle_passed_through(format!("{c}").as_str(), PassedThroughArgs::default())
-        }
         cli::Command::Run(args) => {
             let (cwd, manifest) = cwd_and_manifest()?;
             if let Some(name) = args.script {
@@ -98,8 +95,10 @@ fn run() -> Result<(), MainError> {
         }
         cli::Command::Other(args) => {
             let (cwd, manifest) = cwd_and_manifest()?;
-            // Check if a script with the name exists. If it does, we run it.
             if let Some(name) = args.first() {
+                if name.parse::<passed_through::PassedThroughCommand>().is_ok() {
+                    return pass_to_pnpm(&args); // args already contain name, no need to prepend
+                }
                 if let Some(command) = manifest.scripts.get(name) {
                     return print_and_run_script(&manifest, name, command, &cwd);
                 }
@@ -151,13 +150,7 @@ fn list_scripts(
     Ok(())
 }
 
-fn handle_passed_through(command: &str, args: PassedThroughArgs) -> Result<(), MainError> {
-    let PassedThroughArgs { mut args } = args;
-    args.insert(0, command.into());
-    pass_to_pnpm(&args)
-}
-
-fn pass_to_pnpm(args: &[OsString]) -> Result<(), MainError> {
+fn pass_to_pnpm(args: &[String]) -> Result<(), MainError> {
     let status = Command::new("pnpm")
         .args(args)
         .stdin(Stdio::inherit())
@@ -173,10 +166,7 @@ fn pass_to_pnpm(args: &[OsString]) -> Result<(), MainError> {
         Some(None) => return Ok(()),
         Some(Some(status)) => MainError::Sub(status),
         None => MainError::Pn(PnError::UnexpectedTermination {
-            command: format!(
-                "pnpm {}",
-                args.iter().map(|x| x.to_string_lossy()).join(" "),
-            ),
+            command: format!("pnpm {}", args.iter().join(" ")),
         }),
     })
 }

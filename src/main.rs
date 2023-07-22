@@ -1,5 +1,5 @@
 use clap::Parser;
-use cli::{Cli, PassedThroughArgs};
+use cli::Cli;
 use error::{MainError, PnError};
 use indexmap::IndexMap;
 use itertools::Itertools;
@@ -18,6 +18,7 @@ use yansi::Color::{Black, Red};
 
 mod cli;
 mod error;
+mod passed_through;
 mod workspace;
 
 /// Structure of `package.json`.
@@ -51,26 +52,33 @@ fn main() {
 
 fn run() -> Result<(), MainError> {
     let cli = Cli::parse();
+    let cwd_and_manifest = || -> Result<_, MainError> {
+        let mut cwd = env::current_dir().expect("Couldn't find the current working directory");
+        if cli.workspace_root {
+            cwd = workspace::find_workspace_root(&cwd)?;
+        }
+        let manifest_path = cwd.join("package.json");
+        let manifest = read_package_manifest(&manifest_path)?;
+        Ok((cwd, manifest))
+    };
+    let print_and_run_script = |manifest: &NodeManifest, name: &str, command: &str, cwd: &Path| {
+        eprintln!(
+            "\n> {name}@{version} {cwd}",
+            name = &manifest.name,
+            version = &manifest.version,
+            cwd = dunce::canonicalize(cwd)
+                .unwrap_or_else(|_| cwd.to_path_buf())
+                .display(),
+        );
+        eprintln!("> {command}\n");
+        run_script(name, command, cwd)
+    };
     match cli.command {
         cli::Command::Run(args) => {
-            let mut cwd = env::current_dir().expect("Couldn't find the current working directory");
-            if cli.workspace_root {
-                cwd = workspace::find_workspace_root(&cwd)?;
-            }
-            let manifest_path = cwd.join("package.json");
-            let manifest = read_package_manifest(&manifest_path)?;
+            let (cwd, manifest) = cwd_and_manifest()?;
             if let Some(name) = args.script {
                 if let Some(command) = manifest.scripts.get(&name) {
-                    eprintln!(
-                        "\n> {name}@{version} {cwd}",
-                        name = &manifest.name,
-                        version = &manifest.version,
-                        cwd = dunce::canonicalize(&cwd)
-                            .unwrap_or_else(|_| cwd.clone())
-                            .display(),
-                    );
-                    eprintln!("> {command}\n");
-                    run_script(&name, command, &cwd)
+                    print_and_run_script(&manifest, &name, command, &cwd)
                 } else {
                     PnError::MissingScript { name }
                         .pipe(MainError::Pn)
@@ -85,9 +93,18 @@ fn run() -> Result<(), MainError> {
                     .map_err(MainError::from)
             }
         }
-        cli::Command::Install(args) => handle_passed_through("install", args),
-        cli::Command::Update(args) => handle_passed_through("update", args),
-        cli::Command::Other(args) => pass_to_sub(args.join(" ")),
+        cli::Command::Other(args) => {
+            let (cwd, manifest) = cwd_and_manifest()?;
+            if let Some(name) = args.first() {
+                if passed_through::PASSED_THROUGH_COMMANDS.contains(name) {
+                    return pass_to_pnpm(&args); // args already contain name, no need to prepend
+                }
+                if let Some(command) = manifest.scripts.get(name) {
+                    return print_and_run_script(&manifest, name, command, &cwd);
+                }
+            }
+            pass_to_sub(args.join(" "))
+        }
     }
 }
 
@@ -133,13 +150,7 @@ fn list_scripts(
     Ok(())
 }
 
-fn handle_passed_through(command: &str, args: PassedThroughArgs) -> Result<(), MainError> {
-    let PassedThroughArgs { mut args } = args;
-    args.insert(0, command.into());
-    pass_to_pnpm(&args)
-}
-
-fn pass_to_pnpm(args: &[OsString]) -> Result<(), MainError> {
+fn pass_to_pnpm(args: &[String]) -> Result<(), MainError> {
     let status = Command::new("pnpm")
         .args(args)
         .stdin(Stdio::inherit())
@@ -155,10 +166,7 @@ fn pass_to_pnpm(args: &[OsString]) -> Result<(), MainError> {
         Some(None) => return Ok(()),
         Some(Some(status)) => MainError::Sub(status),
         None => MainError::Pn(PnError::UnexpectedTermination {
-            command: format!(
-                "pnpm {}",
-                args.iter().map(|x| x.to_string_lossy()).join(" "),
-            ),
+            command: format!("pnpm {}", args.iter().join(" ")),
         }),
     })
 }

@@ -15,6 +15,7 @@ clap = { version = "4.3.2", features = ["derive"] }
 lets_find_up = "0.0.3"
 itertools = "0.10.5"
 dunce = "1.0.4"
+phf = { version = "0.11.2", features = ["macros" ]}
 
 [dev-dependencies]
 assert_cmd = "2.0.5"

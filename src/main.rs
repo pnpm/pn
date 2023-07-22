@@ -96,7 +96,7 @@ fn run() -> Result<(), MainError> {
         cli::Command::Other(args) => {
             let (cwd, manifest) = cwd_and_manifest()?;
             if let Some(name) = args.first() {
-                if name.parse::<passed_through::PassedThroughCommand>().is_ok() {
+                if passed_through::PASSED_THROUGH_COMMANDS.contains(name) {
                     return pass_to_pnpm(&args); // args already contain name, no need to prepend
                 }
                 if let Some(command) = manifest.scripts.get(name) {

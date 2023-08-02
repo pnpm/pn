@@ -74,7 +74,6 @@ fn run() -> Result<(), MainError> {
         run_script(name, command, cwd)
     };
     let command_string = |name: &str, args: Vec<String>| {
-        // not sure creating vec with cap makes much diff here
         let mut commands = Vec::with_capacity(args.len() + 1);
         commands.push(name.to_string());
         let mut args = args;

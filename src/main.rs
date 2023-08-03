@@ -73,20 +73,21 @@ fn run() -> Result<(), MainError> {
         eprintln!("> {command}\n");
         run_script(name, command, cwd)
     };
-    let command_string = |name: &str, args: Vec<String>| {
-        let mut commands = Vec::with_capacity(args.len() + 1);
-        commands.push(name.to_string());
-        let mut args = args;
-        commands.append(&mut args);
-        commands.join(" ")
+    let command_string = |name: &str, args: &[String]| {
+        let mut string = name.to_string();
+        for arg in args {
+            string += " ";
+            string += arg;
+        }
+        string
     };
     match cli.command {
         cli::Command::Run(args) => {
             let (cwd, manifest) = cwd_and_manifest()?;
             if let Some(name) = args.script {
                 if let Some(command) = manifest.scripts.get(&name) {
-                    let commands = command_string(command, args.args);
-                    print_and_run_script(&manifest, &name, &commands, &cwd)
+                    let command = command_string(command, &args.args[..]);
+                    print_and_run_script(&manifest, &name, &command, &cwd)
                 } else {
                     PnError::MissingScript { name }
                         .pipe(MainError::Pn)
@@ -108,8 +109,8 @@ fn run() -> Result<(), MainError> {
                     return pass_to_pnpm(&args); // args already contain name, no need to prepend
                 }
                 if let Some(command) = manifest.scripts.get(name) {
-                    let commands = command_string(command, args[1..].to_vec());
-                    return print_and_run_script(&manifest, name, &commands, &cwd);
+                    let command = command_string(command, &args[1..]);
+                    return print_and_run_script(&manifest, name, &command, &cwd);
                 }
             }
             pass_to_sub(args.join(" "))

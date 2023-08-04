@@ -86,7 +86,7 @@ fn run() -> Result<(), MainError> {
             let (cwd, manifest) = cwd_and_manifest()?;
             if let Some(name) = args.script {
                 if let Some(command) = manifest.scripts.get(&name) {
-                    let command = command_string(command, &args.args[..]);
+                    let command = command_string(command, &args.args);
                     print_and_run_script(&manifest, &name, &command, &cwd)
                 } else {
                     PnError::MissingScript { name }

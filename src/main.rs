@@ -5,6 +5,7 @@ use indexmap::IndexMap;
 use itertools::Itertools;
 use pipe_trait::Pipe;
 use serde::{Deserialize, Serialize};
+use shell_quote::sh;
 use std::{
     env,
     ffi::OsString,
@@ -73,20 +74,20 @@ fn run() -> Result<(), MainError> {
         eprintln!("> {command}\n");
         run_script(name, command, cwd)
     };
-    let command_string = |name: &str, args: &[String]| {
-        let mut string = name.to_string();
+    let command_string = |name: &str, args: &[OsString]| {
+        let mut out: Vec<u8> = name.as_bytes().to_owned();
         for arg in args {
-            string += " ";
-            string += arg;
+            out.push(b' ');
+            sh::escape_into(arg, &mut out);
         }
-        string
+        std::str::from_utf8(&out).map(str::to_string)
     };
     match cli.command {
         cli::Command::Run(args) => {
             let (cwd, manifest) = cwd_and_manifest()?;
             if let Some(name) = args.script {
                 if let Some(command) = manifest.scripts.get(&name) {
-                    let command = command_string(command, &args.args);
+                    let command = command_string(command, &args.args).unwrap();
                     print_and_run_script(&manifest, &name, &command, &cwd)
                 } else {
                     PnError::MissingScript { name }
@@ -105,14 +106,23 @@ fn run() -> Result<(), MainError> {
         cli::Command::Other(args) => {
             let (cwd, manifest) = cwd_and_manifest()?;
             if let Some(name) = args.first() {
+                let name = name.to_str().unwrap();
                 if passed_through::PASSED_THROUGH_COMMANDS.contains(name) {
+                    let args = args
+                        .into_iter()
+                        .map(|f| f.into_string().unwrap())
+                        .collect::<Vec<String>>();
                     return pass_to_pnpm(&args); // args already contain name, no need to prepend
                 }
                 if let Some(command) = manifest.scripts.get(name) {
-                    let command = command_string(command, &args[1..]);
+                    let command = command_string(command, &args[1..]).unwrap();
                     return print_and_run_script(&manifest, name, &command, &cwd);
                 }
             }
+            let args = args
+                .into_iter()
+                .map(|f| f.into_string().unwrap())
+                .collect::<Vec<String>>();
             pass_to_sub(args.join(" "))
         }
     }

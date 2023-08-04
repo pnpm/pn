@@ -436,6 +436,7 @@ dependencies = [
  "pretty_assertions",
  "serde",
  "serde_json",
+ "shell-quote",
  "tempfile",
  "yansi",
 ]
@@ -605,6 +606,12 @@ dependencies = [
  "serde",
  "unsafe-libyaml",
 ]
+
+[[package]]
+name = "shell-quote"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab31b1e46a3f14300977ece8c355009deddc6c531de49d55951e795bbad42957"
 
 [[package]]
 name = "siphasher"

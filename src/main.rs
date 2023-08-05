@@ -251,6 +251,29 @@ mod tests {
     use serde_json::json;
 
     #[test]
+    fn test_append_args_empty() {
+        let command = append_args("echo hello world", &[]);
+        dbg!(&command);
+        assert!(matches!(&command, Cow::Borrowed(_)));
+    }
+
+    #[test]
+    fn test_append_args_non_empty() {
+        let command = append_args(
+            "echo hello world",
+            &[
+                "abc".to_string(),
+                "def".to_string(),
+                "ghi jkl".to_string(),
+                "\"".to_string(),
+            ],
+        );
+        dbg!(&command);
+        assert!(matches!(&command, Cow::Owned(_)));
+        assert_eq!(command, r#"echo hello world 'abc' 'def' 'ghi jkl' '"'"#);
+    }
+
+    #[test]
     fn test_list_scripts() {
         let script_map = [
             ("hello", "echo hello"),

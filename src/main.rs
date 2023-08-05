@@ -76,17 +76,6 @@ fn run() -> Result<(), MainError> {
         eprintln!("> {command}\n");
         run_script(name, command, cwd)
     };
-    fn command_string<'a>(name: &'a str, args: &[String]) -> Cow<'a, str> {
-        if args.is_empty() {
-            return Cow::Borrowed(name);
-        }
-        let mut command = name.to_string();
-        for arg in args {
-            let quoted = Quoted::unix(arg); // because pn uses `sh -c` even on Windows
-            format_buf!(command, " {quoted}");
-        }
-        Cow::Owned(command)
-    }
     match cli.command {
         cli::Command::Run(args) => {
             let (cwd, manifest) = cwd_and_manifest()?;
@@ -153,6 +142,18 @@ fn run_script(name: &str, command: &str, cwd: &Path) -> Result<(), MainError> {
     }
     .pipe(MainError::Pn)
     .pipe(Err)
+}
+
+fn command_string<'a>(name: &'a str, args: &[String]) -> Cow<'a, str> {
+    if args.is_empty() {
+        return Cow::Borrowed(name);
+    }
+    let mut command = name.to_string();
+    for arg in args {
+        let quoted = Quoted::unix(arg); // because pn uses `sh -c` even on Windows
+        format_buf!(command, " {quoted}");
+    }
+    Cow::Owned(command)
 }
 
 fn list_scripts(

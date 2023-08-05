@@ -3,9 +3,9 @@ use cli::Cli;
 use error::{MainError, PnError};
 use indexmap::IndexMap;
 use itertools::Itertools;
+use os_display::Quotable;
 use pipe_trait::Pipe;
 use serde::{Deserialize, Serialize};
-use os_display::Quotable;
 use std::{
     env,
     ffi::OsString,

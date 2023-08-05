@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "list-args": "sh list-args.sh"
+  }
+}

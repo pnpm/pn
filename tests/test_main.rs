@@ -61,6 +61,30 @@ fn run_script() {
 }
 
 #[test]
+fn append_script_args() {
+    let temp_dir = tempdir().unwrap();
+    let tree = MergeableFileSystemTree::<&str, &str>::from(dir! {
+        "package.json" => file!(include_str!("fixtures/append-script-args/package.json")),
+        "list-args.sh" => file!(include_str!("fixtures/append-script-args/list-args.sh")),
+    });
+    tree.build(&temp_dir).unwrap();
+
+    Command::cargo_bin("pn")
+        .unwrap()
+        .current_dir(&temp_dir)
+        .arg("run")
+        .arg("list-args")
+        .arg("foo")
+        .arg("bar")
+        .arg("hello world")
+        .arg("! !@")
+        .arg("abc def ghi")
+        .assert()
+        .success()
+        .stdout(include_str!("fixtures/append-script-args/stdout.txt"));
+}
+
+#[test]
 fn run_from_workspace_root() {
     let temp_dir = tempdir().unwrap();
     let tree = MergeableFileSystemTree::<&str, &str>::from(dir! {

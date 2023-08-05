@@ -1,9 +1,10 @@
 use clap::Parser;
 use cli::Cli;
 use error::{MainError, PnError};
+use format_buf::format as format_buf;
 use indexmap::IndexMap;
 use itertools::Itertools;
-use os_display::Quotable;
+use os_display::Quoted;
 use pipe_trait::Pipe;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -78,7 +79,8 @@ fn run() -> Result<(), MainError> {
         let mut s = String::new();
         s += name;
         for arg in args {
-            s += &format!(" {}", arg.quote());
+            let quoted = Quoted::unix(arg); // because pn uses `sh -c` even on Windows
+            format_buf!(s, " {quoted}");
         }
         s
     };

@@ -1,6 +1,7 @@
 use clap::Parser;
 use cli::Cli;
 use error::{MainError, PnError};
+use format_buf::format as format_buf;
 use indexmap::IndexMap;
 use itertools::Itertools;
 use os_display::Quotable;
@@ -78,7 +79,7 @@ fn run() -> Result<(), MainError> {
         let mut s = String::new();
         s += name;
         for arg in args {
-            s += &format!(" {}", arg.quote());
+            format_buf!(s, " {}", arg.quote());
         }
         s
     };

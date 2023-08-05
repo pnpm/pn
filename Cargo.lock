@@ -251,6 +251,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "format-buf"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f7aea5a5909a74969507051a3b17adc84737e31a5f910559892aedce026f4d53"
+
+[[package]]
 name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -437,6 +443,7 @@ dependencies = [
  "clap",
  "derive_more",
  "dunce",
+ "format-buf",
  "indexmap",
  "itertools",
  "lets_find_up",

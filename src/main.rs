@@ -81,7 +81,7 @@ fn run() -> Result<(), MainError> {
             let (cwd, manifest) = cwd_and_manifest()?;
             if let Some(name) = args.script {
                 if let Some(command) = manifest.scripts.get(&name) {
-                    let command = sh_command(command, &args.args);
+                    let command = append_args(command, &args.args);
                     print_and_run_script(&manifest, &name, &command, &cwd)
                 } else {
                     PnError::MissingScript { name }
@@ -105,7 +105,7 @@ fn run() -> Result<(), MainError> {
                     return pass_to_pnpm(&args); // args already contain name, no need to prepend
                 }
                 if let Some(command) = manifest.scripts.get(name) {
-                    let command = sh_command(command, &args[1..]);
+                    let command = append_args(command, &args[1..]);
                     return print_and_run_script(&manifest, name, &command, &cwd);
                 }
             }
@@ -144,7 +144,7 @@ fn run_script(name: &str, command: &str, cwd: &Path) -> Result<(), MainError> {
     .pipe(Err)
 }
 
-fn sh_command<'a>(command: &'a str, args: &[String]) -> Cow<'a, str> {
+fn append_args<'a>(command: &'a str, args: &[String]) -> Cow<'a, str> {
     if args.is_empty() {
         return Cow::Borrowed(command);
     }

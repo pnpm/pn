@@ -50,12 +50,12 @@ fn run_script() {
     Command::cargo_bin("pn")
         .unwrap()
         .current_dir(&temp_dir)
-        .args(["test", "me"])
+        .args(["test", "\"me\""])
         .assert()
         .success()
-        .stdout("hello world me\n")
+        .stdout("hello world \"me\"\n")
         .stderr(format!(
-            "\n> test@1.0.0 {}\n> echo hello world me\n\n",
+            "\n> test@1.0.0 {}\n> echo hello world '\"me\"'\n\n",
             temp_dir.path().pipe(dunce::canonicalize).unwrap().display(),
         ));
 }

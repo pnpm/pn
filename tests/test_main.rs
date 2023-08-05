@@ -46,6 +46,42 @@ fn run_script() {
             "\n> test@1.0.0 {}\n> echo hello world\n\n",
             temp_dir.path().pipe(dunce::canonicalize).unwrap().display(),
         ));
+
+    Command::cargo_bin("pn")
+        .unwrap()
+        .current_dir(&temp_dir)
+        .args(["test", "\"me\""])
+        .assert()
+        .success()
+        .stdout("hello world \"me\"\n")
+        .stderr(format!(
+            "\n> test@1.0.0 {}\n> echo hello world '\"me\"'\n\n",
+            temp_dir.path().pipe(dunce::canonicalize).unwrap().display(),
+        ));
+}
+
+#[test]
+fn append_script_args() {
+    let temp_dir = tempdir().unwrap();
+    let tree = MergeableFileSystemTree::<&str, &str>::from(dir! {
+        "package.json" => file!(include_str!("fixtures/append-script-args/package.json")),
+        "list-args.sh" => file!(include_str!("fixtures/append-script-args/list-args.sh")),
+    });
+    tree.build(&temp_dir).unwrap();
+
+    Command::cargo_bin("pn")
+        .unwrap()
+        .current_dir(&temp_dir)
+        .arg("run")
+        .arg("list-args")
+        .arg("foo")
+        .arg("bar")
+        .arg("hello world")
+        .arg("! !@")
+        .arg("abc def ghi")
+        .assert()
+        .success()
+        .stdout(include_str!("fixtures/append-script-args/stdout.txt").replace("\r\n", "\n"));
 }
 
 #[test]

@@ -8,6 +8,7 @@ use os_display::Quoted;
 use pipe_trait::Pipe;
 use serde::{Deserialize, Serialize};
 use std::{
+    borrow::Cow,
     env,
     ffi::OsString,
     fs::File,
@@ -75,21 +76,12 @@ fn run() -> Result<(), MainError> {
         eprintln!("> {command}\n");
         run_script(name, command, cwd)
     };
-    let command_string = |name: &str, args: &[String]| {
-        let mut s = String::new();
-        s += name;
-        for arg in args {
-            let quoted = Quoted::unix(arg); // because pn uses `sh -c` even on Windows
-            format_buf!(s, " {quoted}");
-        }
-        s
-    };
     match cli.command {
         cli::Command::Run(args) => {
             let (cwd, manifest) = cwd_and_manifest()?;
             if let Some(name) = args.script {
                 if let Some(command) = manifest.scripts.get(&name) {
-                    let command = command_string(command, &args.args);
+                    let command = append_args(command, &args.args);
                     print_and_run_script(&manifest, &name, &command, &cwd)
                 } else {
                     PnError::MissingScript { name }
@@ -113,7 +105,7 @@ fn run() -> Result<(), MainError> {
                     return pass_to_pnpm(&args); // args already contain name, no need to prepend
                 }
                 if let Some(command) = manifest.scripts.get(name) {
-                    let command = command_string(command, &args[1..]);
+                    let command = append_args(command, &args[1..]);
                     return print_and_run_script(&manifest, name, &command, &cwd);
                 }
             }
@@ -150,6 +142,18 @@ fn run_script(name: &str, command: &str, cwd: &Path) -> Result<(), MainError> {
     }
     .pipe(MainError::Pn)
     .pipe(Err)
+}
+
+fn append_args<'a>(command: &'a str, args: &[String]) -> Cow<'a, str> {
+    if args.is_empty() {
+        return Cow::Borrowed(command);
+    }
+    let mut command = command.to_string();
+    for arg in args {
+        let quoted = Quoted::unix(arg); // because pn uses `sh -c` even on Windows
+        format_buf!(command, " {quoted}");
+    }
+    Cow::Owned(command)
 }
 
 fn list_scripts(
@@ -245,6 +249,29 @@ mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
     use serde_json::json;
+
+    #[test]
+    fn test_append_args_empty() {
+        let command = append_args("echo hello world", &[]);
+        dbg!(&command);
+        assert!(matches!(&command, Cow::Borrowed(_)));
+    }
+
+    #[test]
+    fn test_append_args_non_empty() {
+        let command = append_args(
+            "echo hello world",
+            &[
+                "abc".to_string(),
+                "def".to_string(),
+                "ghi jkl".to_string(),
+                "\"".to_string(),
+            ],
+        );
+        dbg!(&command);
+        assert!(matches!(&command, Cow::Owned(_)));
+        assert_eq!(command, r#"echo hello world 'abc' 'def' 'ghi jkl' '"'"#);
+    }
 
     #[test]
     fn test_list_scripts() {

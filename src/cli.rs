@@ -1,5 +1,4 @@
 use clap::*;
-use std::ffi::OsString;
 
 #[derive(Debug, Parser)]
 #[clap(author, version, about, rename_all = "kebab-case")]
@@ -20,7 +19,7 @@ pub enum Command {
     Run(RunArgs),
     /// Execute a shell command in scope of a project.
     #[clap(external_subcommand)]
-    Other(Vec<OsString>),
+    Other(Vec<String>),
 }
 
 /// Runs a defined package script.
@@ -31,5 +30,5 @@ pub struct RunArgs {
     pub script: Option<String>, // Not OsString because it would be compared against package.json#scripts
 
     /// Arguments to pass to the package script.
-    pub args: Vec<OsString>,
+    pub args: Vec<String>,
 }

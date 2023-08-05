@@ -80,12 +80,12 @@ fn run() -> Result<(), MainError> {
         if args.is_empty() {
             return Cow::Borrowed(name);
         }
-        let mut s = name.to_string();
+        let mut command = name.to_string();
         for arg in args {
             let quoted = Quoted::unix(arg); // because pn uses `sh -c` even on Windows
-            format_buf!(s, " {quoted}");
+            format_buf!(command, " {quoted}");
         }
-        Cow::Owned(s)
+        Cow::Owned(command)
     }
     match cli.command {
         cli::Command::Run(args) => {

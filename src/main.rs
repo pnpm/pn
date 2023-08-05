@@ -144,11 +144,11 @@ fn run_script(name: &str, command: &str, cwd: &Path) -> Result<(), MainError> {
     .pipe(Err)
 }
 
-fn sh_command<'a>(name: &'a str, args: &[String]) -> Cow<'a, str> {
+fn sh_command<'a>(command: &'a str, args: &[String]) -> Cow<'a, str> {
     if args.is_empty() {
-        return Cow::Borrowed(name);
+        return Cow::Borrowed(command);
     }
-    let mut command = name.to_string();
+    let mut command = command.to_string();
     for arg in args {
         let quoted = Quoted::unix(arg); // because pn uses `sh -c` even on Windows
         format_buf!(command, " {quoted}");

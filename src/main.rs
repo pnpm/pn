@@ -8,6 +8,7 @@ use os_display::Quoted;
 use pipe_trait::Pipe;
 use serde::{Deserialize, Serialize};
 use std::{
+    borrow::Cow,
     env,
     ffi::OsString,
     fs::File,
@@ -75,15 +76,18 @@ fn run() -> Result<(), MainError> {
         eprintln!("> {command}\n");
         run_script(name, command, cwd)
     };
-    let command_string = |name: &str, args: &[String]| {
+    fn command_string<'a>(name: &'a str, args: &[String]) -> Cow<'a, str> {
+        if args.is_empty() {
+            return Cow::Borrowed(name);
+        }
         let mut s = String::new();
         s += name;
         for arg in args {
             let quoted = Quoted::unix(arg); // because pn uses `sh -c` even on Windows
             format_buf!(s, " {quoted}");
         }
-        s
-    };
+        Cow::Owned(s)
+    }
     match cli.command {
         cli::Command::Run(args) => {
             let (cwd, manifest) = cwd_and_manifest()?;

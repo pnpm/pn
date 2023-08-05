@@ -81,7 +81,7 @@ fn append_script_args() {
         .arg("abc def ghi")
         .assert()
         .success()
-        .stdout(include_str!("fixtures/append-script-args/stdout.txt"));
+        .stdout(include_str!("fixtures/append-script-args/stdout.txt").replace("\r\n", "\n"));
 }
 
 #[test]

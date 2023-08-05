@@ -79,7 +79,8 @@ fn run() -> Result<(), MainError> {
         let mut s = String::new();
         s += name;
         for arg in args {
-            format_buf!(s, " {}", Quoted::unix(arg));
+            let quoted = Quoted::unix(arg); // because pn uses `sh -c` even on Windows
+            format_buf!(s, " {quoted}");
         }
         s
     };

@@ -4,7 +4,7 @@ use error::{MainError, PnError};
 use format_buf::format as format_buf;
 use indexmap::IndexMap;
 use itertools::Itertools;
-use os_display::Quotable;
+use os_display::Quoted;
 use pipe_trait::Pipe;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -79,7 +79,7 @@ fn run() -> Result<(), MainError> {
         let mut s = String::new();
         s += name;
         for arg in args {
-            format_buf!(s, " {}", arg.quote());
+            format_buf!(s, " {}", Quoted::unix(arg));
         }
         s
     };

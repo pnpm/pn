@@ -55,8 +55,8 @@ fn push_path(list: &mut Vec<PathBuf>, item: &Path) {
     list.push(item.to_path_buf());
 }
 
-push_path(my_list, my_path_buf);
-push_path(my_list, my_path_ref.to_path_buf());
+push_path(my_list, &my_path_buf);
+push_path(my_list, my_path_ref);
 ```
 
 The above code is suboptimal because it forces the [copying] of `my_path_buf` even though the type of `my_path_buf` is already `PathBuf`.

@@ -2,7 +2,6 @@ use clap::Parser;
 use cli::Cli;
 use error::{MainError, PnError};
 use indexmap::IndexMap;
-use itertools::Itertools;
 use pipe_trait::Pipe;
 use serde::{Deserialize, Serialize};
 use shell_quoted::ShellQuoted;
@@ -136,9 +135,7 @@ fn run_script(name: &str, command: ShellQuoted, cwd: &Path) -> Result<(), MainEr
             name: name.to_string(),
             status,
         },
-        None => PnError::UnexpectedTermination {
-            command: command.into(),
-        },
+        None => PnError::UnexpectedTermination { command },
     }
     .pipe(MainError::Pn)
     .pipe(Err)
@@ -172,7 +169,7 @@ fn pass_to_pnpm(args: &[String]) -> Result<(), MainError> {
         Some(None) => return Ok(()),
         Some(Some(status)) => MainError::Sub(status),
         None => MainError::Pn(PnError::UnexpectedTermination {
-            command: format!("pnpm {}", args.iter().join(" ")),
+            command: ShellQuoted::from_command_and_args("pnpm".into(), args),
         }),
     })
 }
@@ -195,9 +192,7 @@ fn pass_to_sub(command: ShellQuoted) -> Result<(), MainError> {
     Err(match status {
         Some(None) => return Ok(()),
         Some(Some(status)) => MainError::Sub(status),
-        None => MainError::Pn(PnError::UnexpectedTermination {
-            command: command.into(),
-        }),
+        None => MainError::Pn(PnError::UnexpectedTermination { command }),
     })
 }
 

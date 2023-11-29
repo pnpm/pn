@@ -1,27 +1,13 @@
+use derive_more::{Display, Into};
 use os_display::Quoted;
-use std::{
-    ffi::OsStr,
-    fmt::{self, Write as _},
-};
+use std::{ffi::OsStr, fmt::Write as _};
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Display, Into)]
 pub struct ShellQuoted(String);
-
-impl fmt::Display for ShellQuoted {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.0)
-    }
-}
 
 impl AsRef<OsStr> for ShellQuoted {
     fn as_ref(&self) -> &OsStr {
         self.0.as_ref()
-    }
-}
-
-impl From<ShellQuoted> for String {
-    fn from(value: ShellQuoted) -> Self {
-        value.0
     }
 }
 

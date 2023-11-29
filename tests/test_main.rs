@@ -59,7 +59,6 @@ fn run_script() {
             temp_dir.path().pipe(dunce::canonicalize).unwrap().display(),
         ));
 
-    // other command not passthrough
     Command::cargo_bin("pn")
         .unwrap()
         .current_dir(&temp_dir)

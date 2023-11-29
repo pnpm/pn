@@ -15,10 +15,7 @@ pub enum PnError {
 
     /// Subprocess finishes but without a status code.
     #[display(fmt = "Command ended unexpectedly: {command}")]
-    UnexpectedTermination {
-        // using ShellQuoted here so that output can be copy-pasted into shell
-        command: ShellQuoted,
-    },
+    UnexpectedTermination { command: ShellQuoted },
 
     /// Fail to spawn a subprocess.
     #[display(fmt = "Failed to spawn process: {_0}")]

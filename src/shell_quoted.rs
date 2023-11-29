@@ -23,8 +23,6 @@ impl ShellQuoted {
         write!(&mut self.0, "{delim}{quoted}").expect("String write doesn't panic");
     }
 
-    // convenience methods based on usage
-
     pub fn from_command_and_args<S: AsRef<str>, I: IntoIterator<Item = S>>(
         command: String,
         args: I,

@@ -23,10 +23,11 @@ impl ShellQuoted {
         write!(&mut self.0, "{delim}{quoted}").expect("String write doesn't panic");
     }
 
-    pub fn from_command_and_args<S: AsRef<str>, I: IntoIterator<Item = S>>(
-        command: String,
-        args: I,
-    ) -> Self {
+    pub fn from_command_and_args<Args>(command: String, args: Args) -> Self
+    where
+        Args: IntoIterator,
+        Args::Item: AsRef<str>,
+    {
         let mut cmd = Self::from_command(command);
         for arg in args {
             cmd.push_arg(arg);
@@ -34,7 +35,11 @@ impl ShellQuoted {
         cmd
     }
 
-    pub fn from_args<S: AsRef<str>, I: IntoIterator<Item = S>>(args: I) -> Self {
+    pub fn from_args<Args>(args: Args) -> Self
+    where
+        Args: IntoIterator,
+        Args::Item: AsRef<str>,
+    {
         Self::from_command_and_args(String::default(), args)
     }
 }

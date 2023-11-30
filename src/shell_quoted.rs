@@ -1,6 +1,6 @@
 use derive_more::{Display, Into};
 use os_display::Quoted;
-use std::{ffi::OsStr, fmt::Write};
+use std::ffi::OsStr;
 
 #[derive(Debug, Display, Into)]
 pub struct ShellQuoted(String);
@@ -18,6 +18,7 @@ impl ShellQuoted {
     }
 
     pub fn push_arg<S: AsRef<str>>(&mut self, arg: S) {
+        use std::fmt::Write;
         if !self.0.is_empty() {
             self.0.push(' ');
         }

@@ -18,9 +18,11 @@ impl ShellQuoted {
     }
 
     pub fn push_arg<S: AsRef<str>>(&mut self, arg: S) {
-        let delim = if self.0.is_empty() { "" } else { " " };
+        if !self.0.is_empty() {
+            self.0.push(' ');
+        }
         let quoted = Quoted::unix(arg.as_ref()); // because pn uses `sh -c` even on Windows
-        write!(&mut self.0, "{delim}{quoted}").expect("String write doesn't panic");
+        write!(self.0, "{quoted}").expect("string write doesn't panic");
     }
 
     pub fn from_command_and_args<Args>(command: String, args: Args) -> Self

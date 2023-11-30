@@ -1,6 +1,6 @@
 use derive_more::{Display, Into};
 use os_display::Quoted;
-use std::{ffi::OsStr, fmt::Write as _};
+use std::{ffi::OsStr, fmt::Write};
 
 #[derive(Debug, Display, Into)]
 pub struct ShellQuoted(String);

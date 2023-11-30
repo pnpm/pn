@@ -50,6 +50,7 @@ impl ShellQuoted {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn test_from_command_and_args() {

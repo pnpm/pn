@@ -2,7 +2,7 @@ use derive_more::{Display, Into};
 use os_display::Quoted;
 use std::{ffi::OsStr, fmt::Write as _};
 
-#[derive(Debug, Clone, Default, Display, Into)]
+#[derive(Debug, Display, Into)]
 pub struct ShellQuoted(String);
 
 impl AsRef<OsStr> for ShellQuoted {

@@ -1,3 +1,4 @@
+use crate::shell_quoted::ShellQuoted;
 use derive_more::{Display, From};
 use std::{env::JoinPathsError, io, num::NonZeroI32, path::PathBuf};
 
@@ -13,8 +14,8 @@ pub enum PnError {
     ScriptError { name: String, status: NonZeroI32 },
 
     /// Subprocess finishes but without a status code.
-    #[display(fmt = "Command {command:?} has ended unexpectedly")]
-    UnexpectedTermination { command: String },
+    #[display(fmt = "Command ended unexpectedly: {command}")]
+    UnexpectedTermination { command: ShellQuoted },
 
     /// Fail to spawn a subprocess.
     #[display(fmt = "Failed to spawn process: {_0}")]

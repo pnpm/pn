@@ -58,6 +58,15 @@ fn run_script() {
             "\n> test@1.0.0 {}\n> echo hello world '\"me\"'\n\n",
             temp_dir.path().pipe(dunce::canonicalize).unwrap().display(),
         ));
+
+    Command::cargo_bin("pn")
+        .unwrap()
+        .current_dir(&temp_dir)
+        .args(["echo", ";ls"])
+        .assert()
+        .success()
+        .stdout(";ls\n")
+        .stderr("");
 }
 
 #[test]

@@ -1,14 +1,11 @@
 use clap::Parser;
 use cli::Cli;
 use error::{MainError, PnError};
-use format_buf::format as format_buf;
 use indexmap::IndexMap;
-use itertools::Itertools;
-use os_display::Quoted;
 use pipe_trait::Pipe;
 use serde::{Deserialize, Serialize};
+use shell_quoted::ShellQuoted;
 use std::{
-    borrow::Cow,
     env,
     ffi::OsString,
     fs::File,
@@ -22,6 +19,7 @@ use yansi::Color::{Black, Red};
 mod cli;
 mod error;
 mod passed_through;
+mod shell_quoted;
 mod workspace;
 
 /// Structure of `package.json`.
@@ -64,25 +62,26 @@ fn run() -> Result<(), MainError> {
         let manifest = read_package_manifest(&manifest_path)?;
         Ok((cwd, manifest))
     };
-    let print_and_run_script = |manifest: &NodeManifest, name: &str, command: &str, cwd: &Path| {
-        eprintln!(
-            "\n> {name}@{version} {cwd}",
-            name = &manifest.name,
-            version = &manifest.version,
-            cwd = dunce::canonicalize(cwd)
-                .unwrap_or_else(|_| cwd.to_path_buf())
-                .display(),
-        );
-        eprintln!("> {command}\n");
-        run_script(name, command, cwd)
-    };
+    let print_and_run_script =
+        |manifest: &NodeManifest, name: &str, command: ShellQuoted, cwd: &Path| {
+            eprintln!(
+                "\n> {name}@{version} {cwd}",
+                name = &manifest.name,
+                version = &manifest.version,
+                cwd = dunce::canonicalize(cwd)
+                    .unwrap_or_else(|_| cwd.to_path_buf())
+                    .display(),
+            );
+            eprintln!("> {command}\n");
+            run_script(name, command, cwd)
+        };
     match cli.command {
         cli::Command::Run(args) => {
             let (cwd, manifest) = cwd_and_manifest()?;
             if let Some(name) = args.script {
                 if let Some(command) = manifest.scripts.get(&name) {
-                    let command = append_args(command, &args.args);
-                    print_and_run_script(&manifest, &name, &command, &cwd)
+                    let command = ShellQuoted::from_command_and_args(command.into(), &args.args);
+                    print_and_run_script(&manifest, &name, command, &cwd)
                 } else {
                     PnError::MissingScript { name }
                         .pipe(MainError::Pn)
@@ -105,22 +104,22 @@ fn run() -> Result<(), MainError> {
                     return pass_to_pnpm(&args); // args already contain name, no need to prepend
                 }
                 if let Some(command) = manifest.scripts.get(name) {
-                    let command = append_args(command, &args[1..]);
-                    return print_and_run_script(&manifest, name, &command, &cwd);
+                    let command = ShellQuoted::from_command_and_args(command.into(), &args[1..]);
+                    return print_and_run_script(&manifest, name, command, &cwd);
                 }
             }
-            pass_to_sub(args.join(" "))
+            pass_to_sub(ShellQuoted::from_args(args))
         }
     }
 }
 
-fn run_script(name: &str, command: &str, cwd: &Path) -> Result<(), MainError> {
+fn run_script(name: &str, command: ShellQuoted, cwd: &Path) -> Result<(), MainError> {
     let path_env = create_path_env()?;
     let status = Command::new("sh")
         .current_dir(cwd)
         .env("PATH", path_env)
         .arg("-c")
-        .arg(command)
+        .arg(&command)
         .stdin(Stdio::inherit())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
@@ -136,24 +135,10 @@ fn run_script(name: &str, command: &str, cwd: &Path) -> Result<(), MainError> {
             name: name.to_string(),
             status,
         },
-        None => PnError::UnexpectedTermination {
-            command: command.to_string(),
-        },
+        None => PnError::UnexpectedTermination { command },
     }
     .pipe(MainError::Pn)
     .pipe(Err)
-}
-
-fn append_args<'a>(command: &'a str, args: &[String]) -> Cow<'a, str> {
-    if args.is_empty() {
-        return Cow::Borrowed(command);
-    }
-    let mut command = command.to_string();
-    for arg in args {
-        let quoted = Quoted::unix(arg); // because pn uses `sh -c` even on Windows
-        format_buf!(command, " {quoted}");
-    }
-    Cow::Owned(command)
 }
 
 fn list_scripts(
@@ -184,12 +169,12 @@ fn pass_to_pnpm(args: &[String]) -> Result<(), MainError> {
         Some(None) => return Ok(()),
         Some(Some(status)) => MainError::Sub(status),
         None => MainError::Pn(PnError::UnexpectedTermination {
-            command: format!("pnpm {}", args.iter().join(" ")),
+            command: ShellQuoted::from_command_and_args("pnpm".into(), args),
         }),
     })
 }
 
-fn pass_to_sub(command: String) -> Result<(), MainError> {
+fn pass_to_sub(command: ShellQuoted) -> Result<(), MainError> {
     let path_env = create_path_env()?;
     let status = Command::new("sh")
         .env("PATH", path_env)
@@ -249,29 +234,6 @@ mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
     use serde_json::json;
-
-    #[test]
-    fn test_append_args_empty() {
-        let command = append_args("echo hello world", &[]);
-        dbg!(&command);
-        assert!(matches!(&command, Cow::Borrowed(_)));
-    }
-
-    #[test]
-    fn test_append_args_non_empty() {
-        let command = append_args(
-            "echo hello world",
-            &[
-                "abc".to_string(),
-                "def".to_string(),
-                "ghi jkl".to_string(),
-                "\"".to_string(),
-            ],
-        );
-        dbg!(&command);
-        assert!(matches!(&command, Cow::Owned(_)));
-        assert_eq!(command, r#"echo hello world 'abc' 'def' 'ghi jkl' '"'"#);
-    }
 
     #[test]
     fn test_list_scripts() {

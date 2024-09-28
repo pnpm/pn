@@ -1,40 +1,24 @@
 use clap::Parser;
 use cli::Cli;
 use error::{MainError, PnError};
-use indexmap::IndexMap;
 use pipe_trait::Pipe;
-use serde::{Deserialize, Serialize};
 use shell_quoted::ShellQuoted;
 use std::{
     env,
-    ffi::OsString,
-    fs::File,
-    io::{self, ErrorKind, Write},
-    num::NonZeroI32,
+    io::{self, Write},
     path::Path,
-    process::{exit, Command, Stdio},
+    process::exit,
 };
 use yansi::Color::{Black, Red};
 
 mod cli;
-mod error;
-mod passed_through;
-mod shell_quoted;
-mod workspace;
 
-/// Structure of `package.json`.
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
-#[serde(rename_all = "kebab-case")]
-struct NodeManifest {
-    #[serde(default)]
-    name: String,
-
-    #[serde(default)]
-    version: String,
-
-    #[serde(default)]
-    scripts: IndexMap<String, String>,
-}
+use pn::error;
+use pn::passed_through;
+use pn::shell_quoted;
+use pn::utils::*;
+use pn::workspace;
+use pn::NodeManifest;
 
 fn main() {
     match run() {
@@ -113,34 +97,6 @@ fn run() -> Result<(), MainError> {
     }
 }
 
-fn run_script(name: &str, command: ShellQuoted, cwd: &Path) -> Result<(), MainError> {
-    let path_env = create_path_env()?;
-    let status = Command::new("sh")
-        .current_dir(cwd)
-        .env("PATH", path_env)
-        .arg("-c")
-        .arg(&command)
-        .stdin(Stdio::inherit())
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .spawn()
-        .map_err(PnError::SpawnProcessError)?
-        .wait()
-        .map_err(PnError::WaitProcessError)?
-        .code()
-        .map(NonZeroI32::new);
-    match status {
-        Some(None) => return Ok(()),
-        Some(Some(status)) => PnError::ScriptError {
-            name: name.to_string(),
-            status,
-        },
-        None => PnError::UnexpectedTermination { command },
-    }
-    .pipe(MainError::Pn)
-    .pipe(Err)
-}
-
 fn list_scripts(
     mut stdout: impl Write,
     script_map: impl IntoIterator<Item = (String, String)>,
@@ -151,82 +107,6 @@ fn list_scripts(
         writeln!(stdout, "    {command}")?;
     }
     Ok(())
-}
-
-fn pass_to_pnpm(args: &[String]) -> Result<(), MainError> {
-    let status = Command::new("pnpm")
-        .args(args)
-        .stdin(Stdio::inherit())
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .spawn()
-        .map_err(PnError::SpawnProcessError)?
-        .wait()
-        .map_err(PnError::WaitProcessError)?
-        .code()
-        .map(NonZeroI32::new);
-    Err(match status {
-        Some(None) => return Ok(()),
-        Some(Some(status)) => MainError::Sub(status),
-        None => MainError::Pn(PnError::UnexpectedTermination {
-            command: ShellQuoted::from_command_and_args("pnpm".into(), args),
-        }),
-    })
-}
-
-fn pass_to_sub(command: ShellQuoted) -> Result<(), MainError> {
-    let path_env = create_path_env()?;
-    let status = Command::new("sh")
-        .env("PATH", path_env)
-        .arg("-c")
-        .arg(&command)
-        .stdin(Stdio::inherit())
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .spawn()
-        .map_err(PnError::SpawnProcessError)?
-        .wait()
-        .map_err(PnError::WaitProcessError)?
-        .code()
-        .map(NonZeroI32::new);
-    Err(match status {
-        Some(None) => return Ok(()),
-        Some(Some(status)) => MainError::Sub(status),
-        None => MainError::Pn(PnError::UnexpectedTermination { command }),
-    })
-}
-
-fn read_package_manifest(manifest_path: &Path) -> Result<NodeManifest, MainError> {
-    manifest_path
-        .pipe(File::open)
-        .map_err(|error| match error.kind() {
-            ErrorKind::NotFound => PnError::NoPkgManifest {
-                file: manifest_path.to_path_buf(),
-            },
-            _ => PnError::FsError {
-                path: manifest_path.to_path_buf(),
-                error,
-            },
-        })?
-        .pipe(serde_json::de::from_reader::<_, NodeManifest>)
-        .map_err(|err| {
-            MainError::Pn(PnError::ParseJsonError {
-                file: manifest_path.to_path_buf(),
-                message: err.to_string(),
-            })
-        })
-}
-
-fn create_path_env() -> Result<OsString, MainError> {
-    let existing_paths = env::var_os("PATH");
-    let existing_paths = existing_paths.iter().flat_map(env::split_paths);
-    Path::new("node_modules")
-        .join(".bin")
-        .pipe(std::iter::once)
-        .chain(existing_paths)
-        .pipe(env::join_paths)
-        .map_err(PnError::NodeBinPathError)
-        .map_err(MainError::from)
 }
 
 #[cfg(test)]
